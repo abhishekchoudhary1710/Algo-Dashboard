@@ -54,14 +54,43 @@ export interface SwingStrategy {
   } | null;
 }
 
+export interface PivotEntry {
+  pivot_number: number;
+  time: string;
+  price: number;
+  breakout_price?: number;
+  breakout_time?: string;
+  breakdown_price?: number;
+  breakdown_time?: string;
+}
+
+export interface PivotData {
+  total: number;
+  unbroken: PivotEntry[];
+  broken: PivotEntry[];
+}
+
+export interface FirstCandle {
+  time: string;
+  price: number;
+  broken: boolean;
+  breakdown_price?: number | null;
+  breakout_price?: number | null;
+}
+
 export interface DivergenceStrategy {
   active: boolean;
   active_divergences: Array<{
     pivot_number: number;
     divergence_type: string;
     start_time: string;
+    candle_time: string;
+    spot_broken: boolean;
+    fut_broken: boolean;
   }>;
-  entry_setups: string;
+  entry_setups: Record<string, string> | string;
+  pivots?: PivotData;
+  first_candle?: FirstCandle | null;
 }
 
 export interface Strategies {
