@@ -16,7 +16,7 @@ export default function Sidebar() {
     <aside className="w-56 bg-slate-900 border-r border-slate-700 flex flex-col min-h-screen">
       <div className="p-4 border-b border-slate-700">
         <h1 className="text-lg font-bold text-white">AlgoTrading</h1>
-        <p className="text-xs text-slate-400">Dashboard</p>
+        <p className="text-xs text-slate-400">by Abhishek Choudhary</p>
       </div>
       <nav className="flex-1 p-2">
         {navItems.map((item) => {
@@ -39,6 +39,7 @@ export default function Sidebar() {
       </nav>
       <div className="p-4 border-t border-slate-700">
         <p className="text-xs text-slate-500">NIFTY Options Bot</p>
+        <p className="text-[10px] text-slate-600 mt-1">Abhishek Choudhary | AI/ML Developer</p>
       </div>
     </aside>
   );

@@ -15,8 +15,8 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "AlgoTrading Dashboard",
-  description: "NIFTY Options Trading Dashboard",
+  title: "AlgoTrading Dashboard | Abhishek Choudhary",
+  description: "NIFTY Options Trading Dashboard — Built by Abhishek Choudhary (AI/ML Developer)",
 };
 
 export default function RootLayout({

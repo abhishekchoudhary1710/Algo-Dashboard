@@ -512,6 +512,11 @@ export default function LiveDashboard() {
           Last tick: {data.last_tick_time || "--"}
         </span>
       </div>
+
+      {/* Author Credit */}
+      <div className="text-center text-xs text-slate-600 pt-2 border-t border-slate-800">
+        Built by <span className="text-slate-400 font-medium">Abhishek Choudhary</span> — AI/ML Developer
+      </div>
     </div>
   );
 }
