@@ -4,6 +4,7 @@ import type {
   SignalEvent,
   LiveSnapshot,
   HeartbeatData,
+  ExcursionsResponse,
   WSMessage,
 } from "./api";
 
@@ -17,6 +18,7 @@ export interface WSHandlers {
   onSignal: (data: SignalEvent) => void;
   onSnapshot: (data: LiveSnapshot) => void;
   onHeartbeat: (data: HeartbeatData) => void;
+  onExcursion?: (data: ExcursionsResponse) => void;
   onConnect: () => void;
   onDisconnect: () => void;
 }
@@ -70,6 +72,9 @@ export function createTypedWebSocket(handlers: WSHandlers): {
           case "heartbeat":
             handlers.onHeartbeat(msg.data);
             resetHeartbeatTimer();
+            break;
+          case "excursion":
+            handlers.onExcursion?.(msg.data);
             break;
         }
       } catch {

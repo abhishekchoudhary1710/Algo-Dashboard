@@ -1,9 +1,10 @@
 "use client";
 
-import type { Order } from "@/lib/api";
+import type { Order, TradeExcursion } from "@/lib/api";
 
 interface EnhancedOrderTableProps {
   orders: Order[];
+  excursions?: TradeExcursion[];
 }
 
 function statusColor(status: string): string {
@@ -40,16 +41,39 @@ function formatTime(ts: string): string {
   }
 }
 
-export default function EnhancedOrderTable({ orders }: EnhancedOrderTableProps) {
+function rrColor(rr: number): string {
+  if (rr >= 4.0) return "text-green-400";
+  if (rr >= 1.0) return "text-yellow-400";
+  return "text-red-400";
+}
+
+export default function EnhancedOrderTable({
+  orders,
+  excursions,
+}: EnhancedOrderTableProps) {
+  // Build lookup map: order_id -> excursion
+  const excursionMap = new Map<string, TradeExcursion>();
+  if (excursions) {
+    for (const e of excursions) {
+      excursionMap.set(e.order_id, e);
+    }
+  }
+
+  const hasExcursions = excursionMap.size > 0;
+
   return (
     <div className="bg-slate-800 rounded-xl border border-slate-700">
       <div className="px-3 py-2 border-b border-slate-700 flex items-center justify-between">
         <span className="text-xs text-slate-400 font-medium">Orders</span>
-        <span className="text-[10px] text-slate-500">{orders.length} today</span>
+        <span className="text-[10px] text-slate-500">
+          {orders.length} today
+        </span>
       </div>
       <div className="overflow-x-auto max-h-48 overflow-y-auto">
         {orders.length === 0 ? (
-          <p className="text-xs text-slate-500 text-center py-4">No orders today</p>
+          <p className="text-xs text-slate-500 text-center py-4">
+            No orders today
+          </p>
         ) : (
           <table className="w-full text-xs">
             <thead className="text-slate-400 border-b border-slate-700 sticky top-0 bg-slate-800">
@@ -60,50 +84,99 @@ export default function EnhancedOrderTable({ orders }: EnhancedOrderTableProps) 
                 <th className="px-2 py-1.5 text-right font-medium">Qty</th>
                 <th className="px-2 py-1.5 text-right font-medium">SL</th>
                 <th className="px-2 py-1.5 text-right font-medium">Target</th>
-                <th className="px-2 py-1.5 text-center font-medium">Status</th>
+                {hasExcursions && (
+                  <>
+                    <th className="px-2 py-1.5 text-right font-medium">
+                      Spot R:R
+                    </th>
+                    <th className="px-2 py-1.5 text-right font-medium">
+                      Opt R:R
+                    </th>
+                  </>
+                )}
+                <th className="px-2 py-1.5 text-center font-medium">
+                  Status
+                </th>
               </tr>
             </thead>
             <tbody>
-              {orders.map((o, i) => (
-                <tr
-                  key={i}
-                  className="border-b border-slate-700/50 hover:bg-slate-700/30"
-                >
-                  <td className="px-2 py-1.5 text-slate-300 font-mono">
-                    {formatTime(o.timestamp)}
-                  </td>
-                  <td className="px-2 py-1.5 text-slate-200 font-mono">
-                    {o.strike}
-                  </td>
-                  <td className="px-2 py-1.5">
-                    <span
-                      className={`px-1 py-0.5 rounded text-[10px] font-medium ${optionBadge(
-                        o.option_type
-                      )}`}
-                    >
-                      {o.option_type}
-                    </span>
-                  </td>
-                  <td className="px-2 py-1.5 text-right text-slate-300 font-mono">
-                    {o.quantity}
-                  </td>
-                  <td className="px-2 py-1.5 text-right text-red-400 font-mono">
-                    {o.stop_loss || "--"}
-                  </td>
-                  <td className="px-2 py-1.5 text-right text-green-400 font-mono">
-                    {o.target || "--"}
-                  </td>
-                  <td className="px-2 py-1.5 text-center">
-                    <span
-                      className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${statusColor(
-                        o.status
-                      )}`}
-                    >
-                      {o.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {orders.map((o, i) => {
+                const exc = excursionMap.get(o.order_id);
+                return (
+                  <tr
+                    key={i}
+                    className={`border-b border-slate-700/50 hover:bg-slate-700/30 ${
+                      exc?.is_positive
+                        ? "ring-1 ring-inset ring-green-500/30 bg-green-900/10"
+                        : ""
+                    }`}
+                  >
+                    <td className="px-2 py-1.5 text-slate-300 font-mono">
+                      {formatTime(o.timestamp)}
+                    </td>
+                    <td className="px-2 py-1.5 text-slate-200 font-mono">
+                      {o.strike}
+                    </td>
+                    <td className="px-2 py-1.5">
+                      <span
+                        className={`px-1 py-0.5 rounded text-[10px] font-medium ${optionBadge(
+                          o.option_type
+                        )}`}
+                      >
+                        {o.option_type}
+                      </span>
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-slate-300 font-mono">
+                      {o.quantity}
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-red-400 font-mono">
+                      {o.stop_loss || "--"}
+                    </td>
+                    <td className="px-2 py-1.5 text-right text-green-400 font-mono">
+                      {o.target || "--"}
+                    </td>
+                    {hasExcursions && (
+                      <>
+                        <td className="px-2 py-1.5 text-right font-mono">
+                          {exc ? (
+                            <span
+                              className={`font-bold ${rrColor(
+                                exc.spot_rr_achieved
+                              )}`}
+                            >
+                              {exc.spot_rr_achieved.toFixed(1)}x
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">--</span>
+                          )}
+                        </td>
+                        <td className="px-2 py-1.5 text-right font-mono">
+                          {exc ? (
+                            <span
+                              className={`font-bold ${rrColor(
+                                exc.option_rr_achieved
+                              )}`}
+                            >
+                              {exc.option_rr_achieved.toFixed(1)}x
+                            </span>
+                          ) : (
+                            <span className="text-slate-600">--</span>
+                          )}
+                        </td>
+                      </>
+                    )}
+                    <td className="px-2 py-1.5 text-center">
+                      <span
+                        className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${statusColor(
+                          o.status
+                        )}`}
+                      >
+                        {o.status}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         )}

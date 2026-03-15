@@ -11,10 +11,12 @@ import type {
   OrdersResponse,
   EntriesResponse,
   SignalsResponse,
+  ExcursionsResponse,
   RiskMetrics,
   Strategies,
   Order,
   EntrySignal,
+  TradeExcursion,
 } from "@/lib/api";
 
 import TopBar from "./TopBar";
@@ -25,6 +27,7 @@ import StrategyCards from "./StrategyCards";
 import SignalFeed from "./SignalFeed";
 import EnhancedOrderTable from "./EnhancedOrderTable";
 import EntrySignalsTable from "./EntrySignalsTable";
+import TradeExcursionPanel from "./TradeExcursionPanel";
 import StrategyPerformance from "./StrategyPerformance";
 import SystemControls from "./SystemControls";
 
@@ -52,6 +55,7 @@ export default function DashboardGrid() {
   const [entries, setEntries] = useState<EntrySignal[]>([]);
   const [signals, setSignals] = useState<SignalEvent[]>([]);
   const [metrics, setMetrics] = useState<RiskMetrics | null>(null);
+  const [excursions, setExcursions] = useState<TradeExcursion[]>([]);
 
   // Refs for cleanup
   const wsRef = useRef<{ close: () => void } | null>(null);
@@ -98,6 +102,15 @@ export default function DashboardGrid() {
     }
   }, []);
 
+  const fetchExcursions = useCallback(async () => {
+    try {
+      const data = await fetchAPI<ExcursionsResponse>("/api/excursions/today");
+      setExcursions(data.trades);
+    } catch {
+      // Ignore
+    }
+  }, []);
+
   // Setup WS + polling
   useEffect(() => {
     // Connect typed WebSocket
@@ -116,6 +129,7 @@ export default function DashboardGrid() {
         setCandles(data.candles);
       },
       onHeartbeat: (data) => setHeartbeat(data),
+      onExcursion: (data) => setExcursions(data.trades),
       onConnect: () => setConnected(true),
       onDisconnect: () => setConnected(false),
     });
@@ -125,12 +139,14 @@ export default function DashboardGrid() {
     fetchEntries();
     fetchSignals();
     fetchMetrics();
+    fetchExcursions();
 
     // Polling intervals
     const intervals = [
       setInterval(fetchOrders, 5000),
       setInterval(fetchEntries, 5000),
       setInterval(fetchMetrics, 60000),
+      setInterval(fetchExcursions, 5000),
     ];
     intervalsRef.current = intervals;
 
@@ -138,7 +154,7 @@ export default function DashboardGrid() {
       wsRef.current?.close();
       intervals.forEach(clearInterval);
     };
-  }, [fetchOrders, fetchEntries, fetchSignals, fetchMetrics]);
+  }, [fetchOrders, fetchEntries, fetchSignals, fetchMetrics, fetchExcursions]);
 
   // Loading state
   if (!tickData && !connected) {
@@ -195,7 +211,8 @@ export default function DashboardGrid() {
           <StrategyCards strategies={strategies} />
         </div>
         <div className="space-y-3">
-          <EnhancedOrderTable orders={orders} />
+          <TradeExcursionPanel excursions={excursions} />
+          <EnhancedOrderTable orders={orders} excursions={excursions} />
           <EntrySignalsTable entries={entries} />
         </div>
         <div className="space-y-3">

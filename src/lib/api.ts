@@ -299,4 +299,5 @@ export type WSMessage =
   | { type: "candle"; data: CandleUpdate }
   | { type: "signal"; data: SignalEvent }
   | { type: "snapshot"; data: LiveSnapshot }
-  | { type: "heartbeat"; data: HeartbeatData };
+  | { type: "heartbeat"; data: HeartbeatData }
+  | { type: "excursion"; data: ExcursionsResponse };
