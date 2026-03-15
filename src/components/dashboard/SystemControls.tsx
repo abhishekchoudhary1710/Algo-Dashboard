@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
-import { postAPI } from "@/lib/api";
-import type { HeartbeatData } from "@/lib/api";
+import { useState, useEffect } from "react";
+import { postAPI, fetchAPI } from "@/lib/api";
+import type { HeartbeatData, DbHealth } from "@/lib/api";
 
 interface SystemControlsProps {
   killSwitch: boolean;

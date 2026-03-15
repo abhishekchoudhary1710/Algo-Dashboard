@@ -301,3 +301,83 @@ export type WSMessage =
   | { type: "snapshot"; data: LiveSnapshot }
   | { type: "heartbeat"; data: HeartbeatData }
   | { type: "excursion"; data: ExcursionsResponse };
+
+// --- Trade Lifecycle (from trades table) ---
+
+export interface Trade {
+  trade_id: string;
+  strategy: string;
+  instrument: string;
+  direction: string;
+  status: string;
+  entry_order_id: string;
+  entry_price: number | null;
+  entry_time: string | null;
+  exit_price: number | null;
+  exit_time: string | null;
+  exit_reason: string | null;
+  option_type: string;
+  strike: number | null;
+  expiry: string;
+  quantity: number | null;
+  realized_pnl: number | null;
+}
+
+export interface TradesResponse {
+  trades: Trade[];
+  count: number;
+}
+
+export interface TradeSummary {
+  date: string;
+  total_trades: number;
+  open_trades: number;
+  closed_trades: number;
+  total_pnl: number;
+  winners: number;
+  losers: number;
+  win_rate: number;
+  best_trade: number;
+  worst_trade: number;
+  trades: Trade[];
+}
+
+export interface DailyTradePnl {
+  date: string;
+  total_trades: number;
+  closed_trades: number;
+  total_pnl: number;
+  winners: number;
+  losers: number;
+  win_rate: number;
+}
+
+export interface MonthlyTradesResponse {
+  daily: DailyTradePnl[];
+  total_days: number;
+  total_trades: number;
+  total_pnl: number;
+  overall_win_rate: number;
+}
+
+// --- DB Health ---
+
+export interface DbHealth {
+  enabled: boolean;
+  active?: boolean;
+  min?: number;
+  max?: number;
+  db_size?: string;
+  table_sizes?: Record<string, string>;
+  tick_partitions?: Record<string, string>;
+  excursion_vacuum?: {
+    live_rows: number;
+    dead_rows: number;
+    mods_since_analyze: number;
+    last_vacuum: string | null;
+    last_autovacuum: string | null;
+    last_autoanalyze: string | null;
+  };
+  row_counts?: Record<string, number>;
+  error?: string;
+}
