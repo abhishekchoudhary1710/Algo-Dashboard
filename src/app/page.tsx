@@ -1,5 +1,5 @@
-import LiveDashboard from "@/components/LiveDashboard";
+import DashboardGrid from "@/components/dashboard/DashboardGrid";
 
 export default function Home() {
-  return <LiveDashboard />;
+  return <DashboardGrid />;
 }

@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://34.47.224.176:8000";
 
 export async function fetchAPI<T>(endpoint: string): Promise<T> {
   const res = await fetch(`${API_URL}${endpoint}`, {
@@ -156,3 +156,147 @@ export interface LiveSnapshot {
     premium: number;
   };
 }
+
+// --- New types for dashboard overhaul ---
+
+export interface OHLCCandle {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+}
+
+export interface OHLCResponse {
+  candles: OHLCCandle[];
+  current_candle: OHLCCandle | null;
+  instrument: string;
+  timeframe: string;
+  count: number;
+}
+
+export interface SignalEvent {
+  timestamp: string;
+  strategy: string;
+  instrument: string;
+  price: number;
+  entry_price: number;
+  stop_loss: number;
+  target: number;
+}
+
+export interface SignalsResponse {
+  signals: SignalEvent[];
+  count: number;
+}
+
+export interface RiskMetrics {
+  win_rate: number;
+  total_trades: number;
+  total_signals: number;
+  avg_risk_reward: number;
+  total_risk: number;
+  max_drawdown: number;
+  sharpe_proxy: number | null;
+  signals_per_strategy: Record<string, number>;
+}
+
+export interface SystemHealth {
+  feed_alive: boolean;
+  last_tick_time: string | null;
+  tick_latency_ms: number;
+  uptime_seconds: number;
+  candle_cache_status: Record<string, number>;
+  signal_history_count: number;
+  metrics_cache_age_seconds: number | null;
+}
+
+export interface EntrySignal {
+  timestamp: string;
+  strategy: string;
+  instrument: string;
+  tick_price: number;
+  entry_price: number;
+  stop_loss: number;
+  target: number;
+  option_type: string;
+  strike: number;
+  expiry: string;
+  quantity: number;
+  risk: number;
+}
+
+export interface EntriesResponse {
+  entries: EntrySignal[];
+  count: number;
+}
+
+// --- Trade Excursion Tracking ---
+
+export interface TradeExcursion {
+  order_id: string;
+  timestamp: string;
+  strategy: string;
+  option_display_name: string;
+  duration_seconds: number;
+  // Spot tracking
+  spot_entry: number;
+  spot_sl: number;
+  spot_target: number;
+  spot_mfe: number;
+  spot_mae: number;
+  spot_rr_achieved: number;
+  spot_sl_hit: boolean;
+  spot_target_hit: boolean;
+  // Option tracking
+  option_symbol: string;
+  option_entry_price: number;
+  option_sl: number;
+  option_target: number;
+  option_mfe: number;
+  option_mae: number;
+  option_rr_achieved: number;
+  option_sl_hit: boolean;
+  option_target_hit: boolean;
+  // Meta
+  option_type: string;
+  strike: number;
+  expiry: string;
+  quantity: number;
+  is_positive: boolean;
+  status: string;
+}
+
+export interface ExcursionsResponse {
+  trades: TradeExcursion[];
+  count: number;
+}
+
+// --- WS typed message types ---
+
+export interface TickData {
+  spot_ltp: number;
+  fut_ltp: number;
+  premium: number;
+  tick_count: number;
+  last_tick_time: string | null;
+}
+
+export interface CandleUpdate {
+  instrument: string;
+  timeframe: string;
+  candle: OHLCCandle;
+}
+
+export interface HeartbeatData {
+  server_time: string;
+  feed_alive: boolean;
+  uptime_seconds: number;
+}
+
+export type WSMessage =
+  | { type: "tick"; data: TickData }
+  | { type: "candle"; data: CandleUpdate }
+  | { type: "signal"; data: SignalEvent }
+  | { type: "snapshot"; data: LiveSnapshot }
+  | { type: "heartbeat"; data: HeartbeatData };
