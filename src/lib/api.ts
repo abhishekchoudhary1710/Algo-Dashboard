@@ -133,10 +133,13 @@ export interface MonthlyPnlResponse {
   total_trades: number;
 }
 
+export type EntrySide = "both" | "long_only" | "short_only";
+
 export interface LiveSnapshot {
   bot_running: boolean;
   bot_start_time: string | null;
   kill_switch: boolean;
+  entry_side: EntrySide;
   spot_ltp: number;
   fut_ltp: number;
   last_tick_time: string | null;

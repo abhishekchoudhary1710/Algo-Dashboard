@@ -17,6 +17,7 @@ import type {
   Order,
   EntrySignal,
   TradeExcursion,
+  EntrySide,
 } from "@/lib/api";
 
 import TopBar from "./TopBar";
@@ -42,6 +43,7 @@ export default function DashboardGrid() {
   const [strategies, setStrategies] = useState<Strategies | null>(null);
   const [botRunning, setBotRunning] = useState(false);
   const [killSwitch, setKillSwitch] = useState(false);
+  const [entrySide, setEntrySide] = useState<EntrySide>("both");
   const [ordersCount, setOrdersCount] = useState(0);
   const [candles, setCandles] = useState<{
     spot_1m: number;
@@ -125,6 +127,7 @@ export default function DashboardGrid() {
         setStrategies(data.strategies);
         setBotRunning(data.bot_running);
         setKillSwitch(data.kill_switch);
+        if (data.entry_side) setEntrySide(data.entry_side);
         setOrdersCount(data.today_orders_count);
         setCandles(data.candles);
       },
@@ -218,6 +221,8 @@ export default function DashboardGrid() {
         <div className="space-y-3">
           <SystemControls
             killSwitch={killSwitch}
+            entrySide={entrySide}
+            onEntrySideChange={setEntrySide}
             candles={candles}
             heartbeat={heartbeat}
           />
