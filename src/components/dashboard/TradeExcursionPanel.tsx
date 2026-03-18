@@ -6,177 +6,173 @@ interface TradeExcursionPanelProps {
   excursions: TradeExcursion[];
 }
 
-function rrColor(rr: number): string {
-  if (rr >= 4.0) return "text-green-400";
-  if (rr >= 1.0) return "text-yellow-400";
-  return "text-red-400";
-}
+const STRATEGY_BADGE: Record<string, { bg: string; text: string; label: string }> = {
+  bullish_swing:       { bg: "bg-emerald-500/15", text: "text-emerald-400", label: "Bull Swing" },
+  bearish_swing:       { bg: "bg-red-500/15",     text: "text-red-400",     label: "Bear Swing" },
+  bullish_divergence:  { bg: "bg-blue-500/15",    text: "text-blue-400",    label: "Bull Div" },
+  bearish_divergence:  { bg: "bg-purple-500/15",  text: "text-purple-400",  label: "Bear Div" },
+  ce_buying:           { bg: "bg-emerald-500/15", text: "text-emerald-400", label: "Bull Swing" },
+  pe_selling:          { bg: "bg-red-500/15",     text: "text-red-400",     label: "Bear Swing" },
+};
 
-function rrBgColor(rr: number): string {
-  if (rr >= 4.0) return "bg-green-900/30";
-  if (rr >= 1.0) return "bg-yellow-900/30";
-  return "bg-red-900/30";
-}
-
-function strategyBadge(strategy: string): string {
+function getStrategyBadge(strategy: string) {
   const s = (strategy || "").toLowerCase();
-  if (s.includes("bull")) return "bg-green-900/30 text-green-400";
-  if (s.includes("bear")) return "bg-red-900/30 text-red-400";
-  return "bg-blue-900/30 text-blue-400";
+  for (const [key, val] of Object.entries(STRATEGY_BADGE)) {
+    if (s === key || s.includes(key.split("_")[0])) return val;
+  }
+  return { bg: "bg-slate-700", text: "text-slate-400", label: strategy || "\u2014" };
 }
 
-function strategyLabel(strategy: string): string {
-  const s = (strategy || "").toLowerCase();
-  if (s === "bull swing" || s === "bullish_swing" || s === "bullish") return "Bull Swing";
-  if (s === "bear swing" || s === "bearish_swing" || s === "bearish") return "Bear Swing";
-  if (s === "bull div" || s === "bullish_divergence" || (s.includes("bull") && s.includes("div"))) return "Bull Div";
-  if (s === "bear div" || s === "bearish_divergence" || (s.includes("bear") && s.includes("div"))) return "Bear Div";
-  if (s === "ce_buying") return "Bull Swing";
-  if (s === "pe_selling") return "Bear Swing";
-  return strategy || "—";
+const EXIT_REASON: Record<string, { cls: string; label: string }> = {
+  TRACKING:          { cls: "text-blue-400 bg-blue-500/10 border-blue-500/30",       label: "LIVE" },
+  OPTION_SL_HIT:     { cls: "text-red-400 bg-red-500/10 border-red-500/30",          label: "OPT SL" },
+  OPTION_TARGET_HIT: { cls: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30", label: "TARGET" },
+  SPOT_SL_HIT:       { cls: "text-orange-400 bg-orange-500/10 border-orange-500/30",  label: "SPOT SL" },
+  SPOT_TARGET_HIT:   { cls: "text-emerald-400 bg-emerald-500/10 border-emerald-500/30", label: "TARGET" },
+  TIME_EXIT:         { cls: "text-yellow-400 bg-yellow-500/10 border-yellow-500/30",  label: "TIMEOUT" },
+  CLOSED:            { cls: "text-slate-400 bg-slate-500/10 border-slate-500/30",     label: "CLOSED" },
+};
+
+function getExitReason(status: string) {
+  return EXIT_REASON[status] || { cls: "text-slate-500 bg-slate-800 border-slate-700", label: status };
 }
 
 function formatDuration(seconds: number): string {
   if (seconds < 60) return `${seconds}s`;
   const mins = Math.floor(seconds / 60);
   if (mins < 60) return `${mins}m`;
-  const hrs = Math.floor(mins / 60);
-  const remainMins = mins % 60;
-  return `${hrs}h ${remainMins}m`;
+  return `${Math.floor(mins / 60)}h ${mins % 60}m`;
 }
 
 function formatTime(ts: string): string {
   try {
     const d = new Date(ts);
-    return d.toLocaleTimeString("en-IN", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
+    return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: false });
   } catch {
     const match = ts.match(/(\d{2}:\d{2})/);
     return match ? match[1] : ts;
   }
 }
 
-function statusBadge(status: string): string {
-  switch (status) {
-    case "TRACKING":          return "bg-blue-900/50 text-blue-400";
-    case "OPTION_SL_HIT":     return "bg-red-900/50 text-red-400";
-    case "OPTION_TARGET_HIT": return "bg-green-900/50 text-green-400";
-    case "SPOT_SL_HIT":       return "bg-orange-900/50 text-orange-400";
-    case "SPOT_TARGET_HIT":   return "bg-emerald-900/50 text-emerald-400";
-    case "TIME_EXIT":         return "bg-slate-700 text-slate-300";
-    case "CLOSED":            return "bg-slate-700 text-slate-300";
-    default:                  return "bg-slate-700 text-slate-400";
-  }
-}
+/** RR Progress Bar: 0 to 2.0 target */
+function RRBar({ rr }: { rr: number }) {
+  const target = 2.0;
+  const pct = Math.min((rr / target) * 100, 100);
+  const color =
+    rr >= target ? "bg-emerald-400" : rr >= 1.0 ? "bg-yellow-400" : "bg-red-400";
 
-function statusLabel(status: string): string {
-  switch (status) {
-    case "TRACKING":          return "LIVE";
-    case "OPTION_SL_HIT":     return "OPT SL";
-    case "OPTION_TARGET_HIT": return "OPT TGT";
-    case "SPOT_SL_HIT":       return "SPOT SL";
-    case "SPOT_TARGET_HIT":   return "SPOT TGT";
-    case "TIME_EXIT":         return "TIME OUT";
-    case "CLOSED":            return "CLOSED";
-    default:                  return status;
-  }
-}
-
-export default function TradeExcursionPanel({
-  excursions,
-}: TradeExcursionPanelProps) {
   return (
-    <div className="bg-slate-800 rounded-xl border border-slate-700 h-full flex flex-col">
-      <div className="px-3 py-2 border-b border-slate-700 flex items-center justify-between flex-shrink-0">
-        <span className="text-xs text-slate-400 font-medium">Trade Excursions</span>
-        <span className="text-[10px] text-slate-500">
+    <div className="flex items-center gap-1.5 w-full">
+      <div className="flex-1 h-2 bg-[#1e1e2e] rounded-full overflow-hidden">
+        <div
+          className={`h-full rounded-full transition-all duration-300 ${color}`}
+          style={{ width: `${pct}%` }}
+        />
+      </div>
+      <span className={`text-[10px] font-mono font-bold w-8 text-right ${
+        rr >= 2.0 ? "text-emerald-400" : rr >= 1.0 ? "text-yellow-400" : "text-red-400"
+      }`}>
+        {rr.toFixed(1)}
+      </span>
+    </div>
+  );
+}
+
+export default function TradeExcursionPanel({ excursions }: TradeExcursionPanelProps) {
+  return (
+    <div className="bg-[#12121a] border border-[#1e1e2e] rounded-xl h-full flex flex-col">
+      <div className="px-4 py-3 border-b border-[#1e1e2e] flex items-center justify-between flex-shrink-0">
+        <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">
+          Trade Excursions
+        </span>
+        <span className="text-[10px] font-mono text-slate-600">
           {excursions.length} trade{excursions.length !== 1 ? "s" : ""}
         </span>
       </div>
-      <div className="overflow-x-auto overflow-y-auto flex-1">
+
+      <div className="overflow-y-auto flex-1 px-2 py-2 space-y-2">
         {excursions.length === 0 ? (
-          <p className="text-xs text-slate-500 text-center py-4">No active trades</p>
+          <div className="flex items-center justify-center py-8">
+            <div className="text-center">
+              <div className="text-sm text-slate-600 font-mono">No active trades</div>
+              <div className="text-[10px] text-slate-700 mt-1">Excursion tracking begins on trade entry</div>
+            </div>
+          </div>
         ) : (
-          <table className="w-full text-xs">
-            <thead className="text-slate-400 border-b border-slate-700 sticky top-0 bg-slate-800 z-10">
-              <tr>
-                <th className="px-2 py-1.5 text-left font-medium">Time</th>
-                <th className="px-2 py-1.5 text-left font-medium">Option</th>
-                <th className="px-2 py-1.5 text-left font-medium">Strategy</th>
-                <th className="px-2 py-1.5 text-right font-medium">Dur</th>
-                <th className="px-2 py-1.5 text-right font-medium">Spot R:R</th>
-                <th className="px-2 py-1.5 text-right font-medium">Opt R:R</th>
-                <th className="px-2 py-1.5 text-center font-medium">Spot SL</th>
-                <th className="px-2 py-1.5 text-center font-medium">Opt SL</th>
-                <th className="px-2 py-1.5 text-center font-medium">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {excursions.map((t) => (
-                <tr
-                  key={t.order_id}
-                  className={`border-b border-slate-700/50 hover:bg-slate-700/30 ${
-                    t.is_positive ? "ring-1 ring-inset ring-green-500/30 bg-green-900/10" : ""
-                  }`}
-                >
-                  <td className="px-2 py-1.5 text-slate-300 font-mono">
-                    {formatTime(t.timestamp)}
-                  </td>
-                  <td className="px-2 py-1.5 text-slate-200 font-mono text-[10px]">
-                    {t.option_display_name}
-                  </td>
-                  <td className="px-2 py-1.5">
-                    <span className={`px-1 py-0.5 rounded text-[10px] font-medium ${strategyBadge(t.strategy)}`}>
-                      {strategyLabel(t.strategy)}
+          excursions.map((t) => {
+            const badge = getStrategyBadge(t.strategy);
+            const exit = getExitReason(t.status);
+            const isLive = t.status === "TRACKING";
+
+            return (
+              <div
+                key={t.order_id}
+                className={`bg-[#0d0d14] rounded-lg border p-3 space-y-2 ${
+                  isLive ? "border-blue-500/30" : "border-[#1e1e2e]"
+                } ${t.is_positive ? "ring-1 ring-emerald-500/20" : ""}`}
+              >
+                {/* Row 1: Strategy + Option + Duration + Exit Reason */}
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded ${badge.bg} ${badge.text}`}>
+                      {badge.label}
                     </span>
-                  </td>
-                  <td className="px-2 py-1.5 text-right text-slate-400 font-mono">
-                    {formatDuration(t.duration_seconds)}
-                  </td>
-                  <td className="px-2 py-1.5 text-right">
-                    <span className={`px-1.5 py-0.5 rounded font-mono font-bold ${rrColor(t.spot_rr_achieved)} ${rrBgColor(t.spot_rr_achieved)}`}>
-                      {t.spot_rr_achieved.toFixed(1)}x
+                    <span className="text-[10px] font-mono text-slate-400">
+                      {t.option_display_name}
                     </span>
-                  </td>
-                  <td className="px-2 py-1.5 text-right">
-                    <span className={`px-1.5 py-0.5 rounded font-mono font-bold ${rrColor(t.option_rr_achieved)} ${rrBgColor(t.option_rr_achieved)}`}>
-                      {t.option_rr_achieved.toFixed(1)}x
+                    <span className="text-[10px] text-slate-600">
+                      {formatTime(t.timestamp)} · {formatDuration(t.duration_seconds)}
                     </span>
-                  </td>
-                  {/* Spot SL — actual value + HIT badge */}
-                  <td className="px-2 py-1.5 text-center">
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span className="font-mono text-[10px] text-slate-300">
-                        {t.spot_sl ? t.spot_sl.toFixed(1) : "—"}
-                      </span>
-                      {t.spot_sl_hit && (
-                        <span className="text-[9px] font-bold text-red-400">HIT</span>
-                      )}
-                    </div>
-                  </td>
-                  {/* Option SL — actual value + HIT badge */}
-                  <td className="px-2 py-1.5 text-center">
-                    <div className="flex flex-col items-center gap-0.5">
-                      <span className="font-mono text-[10px] text-slate-300">
-                        {t.option_sl ? t.option_sl.toFixed(1) : "—"}
-                      </span>
-                      {t.option_sl_hit && (
-                        <span className="text-[9px] font-bold text-red-400">HIT</span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-2 py-1.5 text-center">
-                    <span className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${statusBadge(t.status)}`}>
-                      {statusLabel(t.status)}
+                  </div>
+                  <span className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded border ${exit.cls}`}>
+                    {exit.label}
+                  </span>
+                </div>
+
+                {/* Row 2: SL values side-by-side */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-slate-600 w-12">Spot SL</span>
+                    <span className="text-[10px] font-mono text-slate-300">
+                      {t.spot_sl ? t.spot_sl.toFixed(1) : "\u2014"}
                     </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    {t.spot_sl_hit && (
+                      <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-1 rounded">HIT</span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-slate-600 w-12">Opt SL</span>
+                    <span className="text-[10px] font-mono text-slate-300">
+                      {t.option_sl ? t.option_sl.toFixed(1) : "\u2014"}
+                    </span>
+                    {t.option_sl_hit && (
+                      <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-1 rounded">HIT</span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Row 3: RR Progress Bars */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <div className="text-[10px] text-slate-600 mb-0.5">Spot R:R</div>
+                    <RRBar rr={t.spot_rr_achieved} />
+                  </div>
+                  <div>
+                    <div className="text-[10px] text-slate-600 mb-0.5">Option R:R</div>
+                    <RRBar rr={t.option_rr_achieved} />
+                  </div>
+                </div>
+
+                {/* Row 4: MFE / MAE compact */}
+                <div className="flex items-center gap-4 text-[10px] text-slate-600 pt-1 border-t border-[#1e1e2e]">
+                  <span>MFE <span className="font-mono text-emerald-400">{t.spot_mfe.toFixed(1)}</span></span>
+                  <span>MAE <span className="font-mono text-red-400">{t.spot_mae.toFixed(1)}</span></span>
+                  <span>Opt MFE <span className="font-mono text-emerald-400">{t.option_mfe.toFixed(1)}</span></span>
+                  <span>Opt MAE <span className="font-mono text-red-400">{t.option_mae.toFixed(1)}</span></span>
+                </div>
+              </div>
+            );
+          })
         )}
       </div>
     </div>

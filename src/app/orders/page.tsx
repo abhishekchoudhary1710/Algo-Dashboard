@@ -10,7 +10,7 @@ export default function OrdersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h2 className="text-xl font-bold text-white">Orders</h2>
-        <div className="flex gap-1 bg-slate-800 rounded-lg p-1">
+        <div className="flex gap-1 bg-[#12121a] border border-[#1e1e2e] rounded-lg p-1">
           <button
             onClick={() => setMode("today")}
             className={`px-3 py-1.5 rounded-md text-sm transition-colors ${

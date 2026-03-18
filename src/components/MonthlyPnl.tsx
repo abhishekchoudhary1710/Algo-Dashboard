@@ -59,7 +59,7 @@ export default function MonthlyPnl() {
 
   if (!hasTradeData && (!orderData || orderData.daily_pnl.length === 0)) {
     return (
-      <div className="bg-slate-800 rounded-xl p-8 border border-slate-700 text-center">
+      <div className="bg-slate-800 rounded-xl p-8 border border-[#1e1e2e] text-center">
         <p className="text-slate-400">No trading data found</p>
         <p className="text-xs text-slate-500 mt-1">
           P&L data will appear after the bot places trades
@@ -111,36 +111,35 @@ function TradeBasedPnl({ data }: { data: MonthlyTradesResponse }) {
       </div>
 
       {/* Equity Curve */}
-      <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <div className="bg-[#12121a] rounded-xl p-4 border border-[#1e1e2e]">
         <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-4">
           Equity Curve (Cumulative P&L)
         </h3>
-        <div className="flex items-end gap-[2px] h-32 relative">
+        <div className="flex items-end gap-1 h-32 relative">
           {/* Zero line */}
           <div className="absolute left-0 right-0 border-t border-dashed border-slate-600" style={{ bottom: "50%" }} />
           {cumData.map((day) => {
-            const normalized = (day.cumPnl / maxCum) * 50; // -50% to +50% range
+            const normalized = (day.cumPnl / maxCum) * 50;
             const isPositive = day.cumPnl >= 0;
             return (
               <div
                 key={day.date}
                 className="flex-1 flex flex-col items-center group relative"
-                style={{ height: "100%" }}
+                style={{ height: "100%", maxWidth: 60 }}
               >
                 <div className="w-full h-full relative">
                   <div
-                    className={`absolute left-0 right-0 rounded-sm ${
-                      isPositive ? "bg-green-500/60" : "bg-red-500/60"
+                    className={`absolute left-1 right-1 rounded-sm ${
+                      isPositive ? "bg-emerald-500/60" : "bg-red-500/60"
                     }`}
                     style={
                       isPositive
-                        ? { bottom: "50%", height: `${Math.abs(normalized)}%` }
-                        : { top: "50%", height: `${Math.abs(normalized)}%` }
+                        ? { bottom: "50%", height: `${Math.max(Math.abs(normalized), 2)}%` }
+                        : { top: "50%", height: `${Math.max(Math.abs(normalized), 2)}%` }
                     }
                   />
                 </div>
-                {/* Tooltip */}
-                <div className="absolute bottom-full mb-2 hidden group-hover:block bg-slate-700 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
+                <div className="absolute bottom-full mb-2 hidden group-hover:block bg-[#1e1e2e] text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
                   {day.date}: {day.cumPnl > 0 ? "+" : ""}{day.cumPnl.toFixed(2)}
                 </div>
               </div>
@@ -150,11 +149,11 @@ function TradeBasedPnl({ data }: { data: MonthlyTradesResponse }) {
       </div>
 
       {/* Daily P&L Bar Chart */}
-      <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <div className="bg-[#12121a] rounded-xl p-4 border border-[#1e1e2e]">
         <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-4">
           Daily P&L
         </h3>
-        <div className="flex items-end gap-[2px] h-32 relative">
+        <div className="flex items-end gap-1 h-32 relative">
           <div className="absolute left-0 right-0 border-t border-dashed border-slate-600" style={{ bottom: "50%" }} />
           {data.daily.map((day) => {
             const normalized = (day.total_pnl / maxPnl) * 50;
@@ -163,13 +162,13 @@ function TradeBasedPnl({ data }: { data: MonthlyTradesResponse }) {
               <div
                 key={day.date}
                 className="flex-1 flex flex-col items-center group relative"
-                style={{ height: "100%" }}
+                style={{ height: "100%", maxWidth: 60 }}
               >
                 <div className="w-full h-full relative">
                   <div
-                    className={`absolute left-0 right-0 rounded-sm transition-colors ${
+                    className={`absolute left-1 right-1 rounded-sm transition-colors ${
                       isPositive
-                        ? "bg-green-500 hover:bg-green-400"
+                        ? "bg-emerald-500 hover:bg-emerald-400"
                         : "bg-red-500 hover:bg-red-400"
                     }`}
                     style={
@@ -179,7 +178,7 @@ function TradeBasedPnl({ data }: { data: MonthlyTradesResponse }) {
                     }
                   />
                 </div>
-                <div className="absolute bottom-full mb-2 hidden group-hover:block bg-slate-700 text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
+                <div className="absolute bottom-full mb-2 hidden group-hover:block bg-[#1e1e2e] text-white text-xs rounded px-2 py-1 whitespace-nowrap z-10">
                   {day.date}: {day.total_pnl > 0 ? "+" : ""}{day.total_pnl.toFixed(2)} ({day.winners}W / {day.losers}L)
                 </div>
               </div>
@@ -189,10 +188,10 @@ function TradeBasedPnl({ data }: { data: MonthlyTradesResponse }) {
       </div>
 
       {/* Daily Breakdown Table */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+      <div className="bg-[#12121a] rounded-xl border border-[#1e1e2e] overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-700 text-left">
+            <tr className="border-b border-[#1e1e2e] text-left">
               <th className="px-4 py-3 text-xs text-slate-400 font-medium">Date</th>
               <th className="px-4 py-3 text-xs text-slate-400 font-medium">Trades</th>
               <th className="px-4 py-3 text-xs text-slate-400 font-medium">W / L</th>
@@ -207,7 +206,7 @@ function TradeBasedPnl({ data }: { data: MonthlyTradesResponse }) {
               .map((day: DailyTradePnl) => (
                 <tr
                   key={day.date}
-                  className={`border-b border-slate-700/50 hover:bg-slate-700/30 ${
+                  className={`border-b border-[#1e1e2e]/50 hover:bg-slate-700/30 ${
                     day.total_pnl > 0
                       ? "bg-green-500/5"
                       : day.total_pnl < 0
@@ -279,7 +278,7 @@ function OrderBasedPnl({ data }: { data: MonthlyPnlResponse }) {
         />
       </div>
 
-      <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+      <div className="bg-[#12121a] rounded-xl p-4 border border-[#1e1e2e]">
         <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-4">
           Trades by Day
         </h3>
@@ -307,10 +306,10 @@ function OrderBasedPnl({ data }: { data: MonthlyPnlResponse }) {
         </div>
       </div>
 
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
+      <div className="bg-[#12121a] rounded-xl border border-[#1e1e2e] overflow-hidden">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-700 text-left">
+            <tr className="border-b border-[#1e1e2e] text-left">
               <th className="px-4 py-3 text-xs text-slate-400 font-medium">Date</th>
               <th className="px-4 py-3 text-xs text-slate-400 font-medium">Trades</th>
               <th className="px-4 py-3 text-xs text-slate-400 font-medium">Details</th>
@@ -321,7 +320,7 @@ function OrderBasedPnl({ data }: { data: MonthlyPnlResponse }) {
               .slice()
               .reverse()
               .map((day: DailyPnl) => (
-                <tr key={day.date} className="border-b border-slate-700/50 hover:bg-slate-700/30">
+                <tr key={day.date} className="border-b border-[#1e1e2e]/50 hover:bg-slate-700/30">
                   <td className="px-4 py-3 text-slate-300">{day.date}</td>
                   <td className="px-4 py-3 text-white font-medium">{day.trades}</td>
                   <td className="px-4 py-3 text-slate-400 text-xs">
@@ -350,7 +349,7 @@ function SummaryCard({
   color?: string;
 }) {
   return (
-    <div className="bg-slate-800 rounded-xl p-4 border border-slate-700">
+    <div className="bg-[#12121a] rounded-xl p-4 border border-[#1e1e2e]">
       <p className="text-xs text-slate-400 uppercase tracking-wide">{label}</p>
       <p className={`text-2xl font-bold mt-1 ${color}`}>{value}</p>
     </div>

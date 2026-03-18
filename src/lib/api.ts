@@ -139,6 +139,7 @@ export interface LiveSnapshot {
   bot_running: boolean;
   bot_start_time: string | null;
   kill_switch: boolean;
+  execution_paused: boolean;
   entry_side: EntrySide;
   spot_ltp: number;
   fut_ltp: number;
@@ -212,6 +213,35 @@ export interface SystemHealth {
   candle_cache_status: Record<string, number>;
   signal_history_count: number;
   metrics_cache_age_seconds: number | null;
+  // Extended health fields
+  broker_session_active: boolean;
+  ticks_storing: boolean;
+  signals_firing: boolean;
+  orders_attempted_today: number;
+  orders_rejected_today: number;
+  db_write_ok: boolean | null;
+}
+
+export interface ExecutionPause {
+  paused: boolean;
+}
+
+export interface StrategyPerformanceRow {
+  strategy: string;
+  total: number;
+  wins: number;
+  losses: number;
+  sl_hits: number;
+  target_hits: number;
+  timeout_exits: number;
+  avg_rr: number | null;
+  net_pnl: number;
+}
+
+export interface TradesPerformanceResponse {
+  strategies: StrategyPerformanceRow[];
+  source: string;
+  error?: string;
 }
 
 export interface EntrySignal {
@@ -324,11 +354,21 @@ export interface Trade {
   expiry: string;
   quantity: number | null;
   realized_pnl: number | null;
+  max_rr_achieved?: number | null;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface TradesResponse {
   trades: Trade[];
   count: number;
+}
+
+export interface TradesHistoryResponse {
+  trades: Trade[];
+  count: number;
+  days: number;
+  error?: string;
 }
 
 export interface TradeSummary {

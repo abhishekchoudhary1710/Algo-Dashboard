@@ -85,7 +85,7 @@ export default function TopBar({
     : "--";
 
   return (
-    <div className="bg-[#0d1117] border-b border-slate-800 px-4 py-2 flex items-center justify-between gap-4 text-xs flex-wrap">
+    <div className="bg-[#0d0d14] border-b border-[#1e1e2e] px-4 py-2 flex items-center justify-between gap-4 text-xs flex-wrap">
       {/* Left: Logo + Status */}
       <div className="flex items-center gap-3">
         <span className="text-sm font-bold text-white tracking-wider">

@@ -6,12 +6,36 @@
 @import "react-resizable/css/styles.css";
 
 :root {
-  --background: #0f172a;
+  --background: #0a0a0f;
   --foreground: #e2e8f0;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+}
+
+/* Scrollbar styling for terminal look */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0a0a0f;
+}
+::-webkit-scrollbar-thumb {
+  background: #1e1e2e;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #2a2a3e;
+}
+
+/* Date input styling for dark theme */
+input[type="date"] {
+  color-scheme: dark;
+}
+input[type="range"] {
+  color-scheme: dark;
 }
