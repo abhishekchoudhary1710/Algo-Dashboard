@@ -106,7 +106,6 @@ export default function StrategyPerformance({ metrics }: StrategyPerformanceProp
             {rows.map((r) => {
               const label = STRATEGY_LABELS[r.strategy] || r.strategy;
               const color = STRATEGY_COLORS[r.strategy] || "#64748b";
-              const winRate = r.total > 0 ? Math.round((r.wins / r.total) * 100) : 0;
 
               return (
                 <tr

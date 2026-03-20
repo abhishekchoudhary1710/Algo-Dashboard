@@ -256,7 +256,7 @@ export default function BacktestPage() {
       const data = await fetchAPI<TradesHistoryResponse>("/api/trades/history?days=90");
       if (data.error) setError(data.error);
       else setAllTrades(data.trades);
-    } catch (e) {
+    } catch {
       setError("Failed to fetch trade history");
     } finally {
       setLoading(false);
@@ -296,7 +296,7 @@ export default function BacktestPage() {
   const losses = filtered.filter((t) => (t.realized_pnl ?? 0) <= 0 && t.status === "CLOSED").length;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0f] text-slate-200 p-4 space-y-4">
+    <div className="min-h-screen bg-[#0a0a0f] text-slate-200 p-3 md:p-4 space-y-3 md:space-y-4">
       {/* Header */}
       <div>
         <h1 className="text-lg font-mono font-bold tracking-widest uppercase text-slate-200">Backtest & Analysis</h1>
@@ -304,7 +304,7 @@ export default function BacktestPage() {
       </div>
 
       {/* Filter bar */}
-      <div className="bg-[#12121a] border border-[#1e1e2e] rounded-xl p-4 flex flex-wrap items-end gap-4">
+      <div className="bg-[#12121a] border border-[#1e1e2e] rounded-xl p-3 md:p-4 flex flex-wrap items-end gap-3 md:gap-4">
         {/* Date from */}
         <div>
           <label className="text-[10px] text-slate-600 uppercase tracking-wider block mb-1">From</label>
@@ -410,7 +410,7 @@ export default function BacktestPage() {
       ) : (
         <>
           {/* Charts grid */}
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <EquityCurve trades={filtered} />
             <DrawdownCurve trades={filtered} />
             <TradesByHour trades={filtered} />

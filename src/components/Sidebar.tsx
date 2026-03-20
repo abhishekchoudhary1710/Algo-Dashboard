@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: "▣" },
@@ -14,36 +15,67 @@ const navItems = [
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const [open, setOpen] = useState(false);
 
   return (
-    <aside className="w-48 bg-[#0d0d14] border-r border-[#1e1e2e] flex flex-col min-h-screen">
-      <div className="p-4 border-b border-[#1e1e2e]">
-        <h1 className="text-sm font-bold tracking-widest text-slate-200 font-mono uppercase">AlgoTerminal</h1>
-        <p className="text-[10px] text-slate-600 mt-0.5 font-mono">NIFTY · NSE · NFO</p>
-      </div>
-      <nav className="flex-1 p-2">
-        {navItems.map((item) => {
-          const isActive = pathname === item.href;
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 px-3 py-2 rounded-lg mb-0.5 text-xs font-mono transition-colors ${
-                isActive
-                  ? "bg-[#1e1e2e] text-emerald-400 border border-[#2a2a3e]"
-                  : "text-slate-500 hover:bg-[#12121a] hover:text-slate-300"
-              }`}
-            >
-              <span className={`text-sm ${isActive ? "text-emerald-400" : "text-slate-600"}`}>{item.icon}</span>
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
-      <div className="p-4 border-t border-[#1e1e2e]">
-        <p className="text-[10px] text-slate-600 font-mono">Abhishek Choudhary</p>
-        <p className="text-[10px] text-slate-700 font-mono">AI/ML Developer</p>
-      </div>
-    </aside>
+    <>
+      {/* Mobile hamburger */}
+      <button
+        onClick={() => setOpen(!open)}
+        className="md:hidden fixed top-3 left-3 z-50 bg-[#12121a] border border-[#1e1e2e] rounded-lg p-2 text-slate-400 hover:text-white"
+        aria-label="Toggle menu"
+      >
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          {open ? (
+            <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" />
+          ) : (
+            <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" />
+          )}
+        </svg>
+      </button>
+
+      {/* Overlay */}
+      {open && (
+        <div className="md:hidden fixed inset-0 bg-black/60 z-40" onClick={() => setOpen(false)} />
+      )}
+
+      {/* Sidebar */}
+      <aside
+        className={`
+          fixed md:static z-40 w-48 bg-[#0d0d14] border-r border-[#1e1e2e] flex flex-col min-h-screen
+          transition-transform duration-200
+          ${open ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+        `}
+      >
+        <div className="p-4 border-b border-[#1e1e2e]">
+          <h1 className="text-sm font-bold tracking-widest text-slate-200 font-mono uppercase">AlgoTerminal</h1>
+          <p className="text-[10px] text-slate-600 mt-0.5 font-mono">NIFTY · NSE · NFO</p>
+        </div>
+        <nav className="flex-1 p-2">
+          {navItems.map((item) => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.href}
+                href={item.href}
+                onClick={() => setOpen(false)}
+                className={`flex items-center gap-3 px-3 py-2 rounded-lg mb-0.5 text-xs font-mono transition-colors ${
+                  isActive
+                    ? "bg-[#1e1e2e] text-emerald-400 border border-[#2a2a3e]"
+                    : "text-slate-500 hover:bg-[#12121a] hover:text-slate-300"
+                }`}
+              >
+                <span className={`text-sm ${isActive ? "text-emerald-400" : "text-slate-600"}`}>{item.icon}</span>
+                {item.label}
+              </Link>
+            );
+          })}
+        </nav>
+        <div className="p-4 border-t border-[#1e1e2e]">
+          <p className="text-[10px] text-slate-600 font-mono">Abhishek Choudhary</p>
+          <p className="text-[10px] text-slate-700 font-mono">AI/ML Developer</p>
+        </div>
+      </aside>
+    </>
   );
 }

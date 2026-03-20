@@ -112,8 +112,8 @@ export default function TradeExcursionPanel({ excursions }: TradeExcursionPanelP
                 } ${t.is_positive ? "ring-1 ring-emerald-500/20" : ""}`}
               >
                 {/* Row 1: Strategy + Option + Duration + Exit Reason */}
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center justify-between gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     <span className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded ${badge.bg} ${badge.text}`}>
                       {badge.label}
                     </span>
@@ -164,7 +164,7 @@ export default function TradeExcursionPanel({ excursions }: TradeExcursionPanelP
                 </div>
 
                 {/* Row 4: MFE / MAE compact */}
-                <div className="flex items-center gap-4 text-[10px] text-slate-600 pt-1 border-t border-[#1e1e2e]">
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-slate-600 pt-1 border-t border-[#1e1e2e]">
                   <span>MFE <span className="font-mono text-emerald-400">{t.spot_mfe.toFixed(1)}</span></span>
                   <span>MAE <span className="font-mono text-red-400">{t.spot_mae.toFixed(1)}</span></span>
                   <span>Opt MFE <span className="font-mono text-emerald-400">{t.option_mfe.toFixed(1)}</span></span>

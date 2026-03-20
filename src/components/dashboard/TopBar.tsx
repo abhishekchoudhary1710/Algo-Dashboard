@@ -85,75 +85,95 @@ export default function TopBar({
     : "--";
 
   return (
-    <div className="bg-[#0d0d14] border-b border-[#1e1e2e] px-4 py-2 flex items-center justify-between gap-4 text-xs flex-wrap">
-      {/* Left: Logo + Status */}
-      <div className="flex items-center gap-3">
-        <span className="text-sm font-bold text-white tracking-wider">
-          ALGOTERMINAL
-        </span>
-        <span
-          className={`w-2 h-2 rounded-full ${connectionColor} ${
-            connected && feedAlive ? "animate-pulse" : ""
-          }`}
-        />
-        <span
-          className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-            killSwitch
-              ? "bg-red-900/50 text-red-400"
-              : botRunning
-              ? "bg-green-900/50 text-green-400"
-              : "bg-yellow-900/50 text-yellow-400"
-          }`}
-        >
-          {killSwitch ? "KILLED" : botRunning ? "LIVE" : "STOPPED"}
-        </span>
+    <div className="bg-[#0d0d14] border-b border-[#1e1e2e] px-3 md:px-4 py-2 text-xs">
+      {/* Row 1: Logo + Prices (always visible) */}
+      <div className="flex items-center justify-between gap-3">
+        {/* Left: Logo + Status */}
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-sm font-bold text-white tracking-wider hidden sm:inline">
+            ALGOTERMINAL
+          </span>
+          <span className="text-sm font-bold text-white tracking-wider sm:hidden">
+            ALGO
+          </span>
+          <span
+            className={`w-2 h-2 rounded-full flex-shrink-0 ${connectionColor} ${
+              connected && feedAlive ? "animate-pulse" : ""
+            }`}
+          />
+          <span
+            className={`px-1.5 py-0.5 rounded text-[10px] font-medium flex-shrink-0 ${
+              killSwitch
+                ? "bg-red-900/50 text-red-400"
+                : botRunning
+                ? "bg-green-900/50 text-green-400"
+                : "bg-yellow-900/50 text-yellow-400"
+            }`}
+          >
+            {killSwitch ? "KILLED" : botRunning ? "LIVE" : "STOPPED"}
+          </span>
+        </div>
+
+        {/* Center: Prices */}
+        <div className="flex items-center gap-3 sm:gap-6">
+          <div className="text-center">
+            <span className="text-slate-500 block text-[10px] sm:text-xs">SPOT</span>
+            <span
+              className={`font-mono font-bold text-xs sm:text-sm ${
+                spotFlash === "up"
+                  ? "text-green-400"
+                  : spotFlash === "down"
+                  ? "text-red-400"
+                  : "text-white"
+              }`}
+            >
+              {tickData?.spot_ltp ? tickData.spot_ltp.toFixed(2) : "--"}
+            </span>
+          </div>
+          <div className="text-center">
+            <span className="text-slate-500 block text-[10px] sm:text-xs">FUT</span>
+            <span
+              className={`font-mono font-bold text-xs sm:text-sm ${
+                futFlash === "up"
+                  ? "text-green-400"
+                  : futFlash === "down"
+                  ? "text-red-400"
+                  : "text-white"
+              }`}
+            >
+              {tickData?.fut_ltp ? tickData.fut_ltp.toFixed(2) : "--"}
+            </span>
+          </div>
+          <div className="text-center hidden sm:block">
+            <span className="text-slate-500 block text-[10px] sm:text-xs">PREMIUM</span>
+            <span
+              className={`font-mono font-bold text-xs sm:text-sm ${
+                premium > 0 ? "text-green-400" : premium < 0 ? "text-red-400" : "text-slate-300"
+              }`}
+            >
+              {premium > 0 ? "+" : ""}
+              {premium.toFixed(2)}
+            </span>
+          </div>
+        </div>
+
+        {/* Right: Clock + Market (compact on mobile) */}
+        <div className="flex items-center gap-2 text-slate-400 flex-shrink-0">
+          <span className="font-mono text-slate-200">{clock}</span>
+          <span
+            className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
+              marketOpen
+                ? "bg-green-900/30 text-green-400"
+                : "bg-slate-800 text-slate-500"
+            }`}
+          >
+            {marketOpen ? "OPEN" : "CLOSED"}
+          </span>
+        </div>
       </div>
 
-      {/* Center: Prices */}
-      <div className="flex items-center gap-6">
-        <div className="text-center">
-          <span className="text-slate-500 block">SPOT</span>
-          <span
-            className={`font-mono font-bold text-sm ${
-              spotFlash === "up"
-                ? "text-green-400"
-                : spotFlash === "down"
-                ? "text-red-400"
-                : "text-white"
-            }`}
-          >
-            {tickData?.spot_ltp ? tickData.spot_ltp.toFixed(2) : "--"}
-          </span>
-        </div>
-        <div className="text-center">
-          <span className="text-slate-500 block">FUT</span>
-          <span
-            className={`font-mono font-bold text-sm ${
-              futFlash === "up"
-                ? "text-green-400"
-                : futFlash === "down"
-                ? "text-red-400"
-                : "text-white"
-            }`}
-          >
-            {tickData?.fut_ltp ? tickData.fut_ltp.toFixed(2) : "--"}
-          </span>
-        </div>
-        <div className="text-center">
-          <span className="text-slate-500 block">PREMIUM</span>
-          <span
-            className={`font-mono font-bold text-sm ${
-              premium > 0 ? "text-green-400" : premium < 0 ? "text-red-400" : "text-slate-300"
-            }`}
-          >
-            {premium > 0 ? "+" : ""}
-            {premium.toFixed(2)}
-          </span>
-        </div>
-      </div>
-
-      {/* Right: Stats */}
-      <div className="flex items-center gap-4 text-slate-400">
+      {/* Row 2: Stats (hidden on mobile, shown on sm+) */}
+      <div className="hidden sm:flex items-center gap-4 text-slate-400 mt-1 pt-1 border-t border-[#1e1e2e]/50">
         <span>
           Ticks: <span className="text-slate-200 font-mono">{tickData?.tick_count?.toLocaleString() ?? "--"}</span>
         </span>
@@ -162,16 +182,6 @@ export default function TopBar({
         </span>
         <span>
           Orders: <span className="text-slate-200 font-mono">{ordersCount}</span>
-        </span>
-        <span className="font-mono text-slate-200">{clock}</span>
-        <span
-          className={`px-1.5 py-0.5 rounded text-[10px] font-medium ${
-            marketOpen
-              ? "bg-green-900/30 text-green-400"
-              : "bg-slate-800 text-slate-500"
-          }`}
-        >
-          {marketOpen ? "MARKET OPEN" : "CLOSED"}
         </span>
       </div>
     </div>

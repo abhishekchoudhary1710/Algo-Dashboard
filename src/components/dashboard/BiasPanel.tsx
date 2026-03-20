@@ -65,7 +65,7 @@ export default function BiasPanel({ entrySide, executionPaused, onBiasChange }: 
 
       {/* Active state display */}
       <div className="flex items-baseline gap-2">
-        <span className={`text-3xl font-mono font-bold ${active === "pause" ? "text-yellow-400" : active === "long" ? "text-blue-400" : active === "short" ? "text-orange-400" : "text-emerald-400"}`}>
+        <span className={`text-2xl sm:text-3xl font-mono font-bold ${active === "pause" ? "text-yellow-400" : active === "long" ? "text-blue-400" : active === "short" ? "text-orange-400" : "text-emerald-400"}`}>
           {activeConfig.label}
         </span>
         <span className="text-xs text-slate-500">{activeConfig.sublabel}</span>
@@ -77,7 +77,7 @@ export default function BiasPanel({ entrySide, executionPaused, onBiasChange }: 
       </div>
 
       {/* Toggle buttons */}
-      <div className="grid grid-cols-4 gap-1.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
         {BIAS_CONFIG.map((cfg) => {
           const isActive = cfg.key === active;
           return (

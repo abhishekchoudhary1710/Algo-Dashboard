@@ -86,9 +86,9 @@ export default function TradesPage() {
   }
 
   return (
-    <div className="p-6 space-y-6 bg-[#0a0e17] min-h-screen">
-      <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-white">Trade Lifecycle</h1>
+    <div className="p-3 md:p-6 space-y-4 md:space-y-6 bg-[#0a0e17] min-h-screen">
+      <div className="flex items-center justify-between flex-wrap gap-2">
+        <h1 className="text-lg md:text-xl font-bold text-white">Trade Lifecycle</h1>
         <p className="text-xs text-slate-500">{summary?.date || "Today"} | Auto-refresh 10s</p>
       </div>
 
@@ -122,7 +122,7 @@ export default function TradesPage() {
       {/* Open Trades */}
       {allTrades.filter(t => t.status === "OPEN" || t.status === "PARTIAL").length > 0 && (
         <div className="bg-slate-800 rounded-xl border border-blue-500/30 overflow-hidden">
-          <div className="px-4 py-2 border-b border-slate-700 flex items-center gap-2">
+          <div className="px-4 py-2 border-b border-[#1e1e2e] flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
             <p className="text-sm font-medium text-blue-400">Open Trades</p>
           </div>
@@ -134,8 +134,8 @@ export default function TradesPage() {
       )}
 
       {/* Closed Trades */}
-      <div className="bg-slate-800 rounded-xl border border-slate-700 overflow-hidden">
-        <div className="px-4 py-2 border-b border-slate-700">
+      <div className="bg-[#12121a] rounded-xl border border-[#1e1e2e] overflow-hidden">
+        <div className="px-4 py-2 border-b border-[#1e1e2e]">
           <p className="text-sm font-medium text-slate-400">Closed Trades</p>
         </div>
         {allTrades.filter(t => t.status === "CLOSED").length > 0 ? (
@@ -165,7 +165,7 @@ function SummaryCard({
   small?: boolean;
 }) {
   return (
-    <div className="bg-slate-800 rounded-xl p-3 border border-slate-700">
+    <div className="bg-[#12121a] rounded-xl p-3 border border-[#1e1e2e]">
       <p className="text-[10px] text-slate-400 uppercase tracking-wide">{label}</p>
       <p className={`${small ? "text-sm" : "text-xl"} font-bold mt-0.5 ${color}`}>
         {value}
@@ -179,7 +179,7 @@ function TradeTable({ trades, showExit }: { trades: Trade[]; showExit: boolean }
     <div className="overflow-x-auto">
       <table className="w-full text-xs">
         <thead>
-          <tr className="border-b border-slate-700 text-left">
+          <tr className="border-b border-[#1e1e2e] text-left">
             <th className="px-3 py-2 text-slate-400 font-medium">Time</th>
             <th className="px-3 py-2 text-slate-400 font-medium">Strategy</th>
             <th className="px-3 py-2 text-slate-400 font-medium">Direction</th>
@@ -201,7 +201,7 @@ function TradeTable({ trades, showExit }: { trades: Trade[]; showExit: boolean }
           {trades.map((trade) => (
             <tr
               key={trade.trade_id}
-              className={`border-b border-slate-700/50 hover:bg-slate-700/30 ${
+              className={`border-b border-[#1e1e2e]/50 hover:bg-[#1a1a24] ${
                 trade.realized_pnl !== null && trade.realized_pnl > 0
                   ? "bg-green-500/5"
                   : trade.realized_pnl !== null && trade.realized_pnl < 0

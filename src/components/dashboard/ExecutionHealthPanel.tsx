@@ -168,27 +168,27 @@ export default function ExecutionHealthPanel({ health, wsConnected }: Props) {
       </div>
 
       {/* Indicators grid */}
-      <div className="grid grid-cols-3 gap-2 flex-1">
+      <div className="grid grid-cols-2 md:grid-cols-3 gap-2 flex-1">
         {indicators.map((ind) => (
           <div
             key={ind.label}
-            className="flex items-center gap-2 bg-[#0d0d14] rounded-lg px-3 py-2"
+            className="flex items-center gap-1.5 sm:gap-2 bg-[#0d0d14] rounded-lg px-2 sm:px-3 py-2"
           >
             {dot(ind.status)}
             <div className="flex-1 min-w-0">
-              <div className="text-[11px] font-medium text-slate-300 truncate">{ind.label}</div>
+              <div className="text-[10px] sm:text-[11px] font-medium text-slate-300 truncate">{ind.label}</div>
               {ind.detail && (
-                <div className="text-[10px] text-slate-600 truncate">{ind.detail}</div>
+                <div className="text-[9px] sm:text-[10px] text-slate-600 truncate">{ind.detail}</div>
               )}
             </div>
-            {badge(ind.status)}
+            <span className="hidden sm:inline">{badge(ind.status)}</span>
           </div>
         ))}
       </div>
 
       {/* Latency row */}
       {health && (
-        <div className="flex items-center gap-4 pt-1 border-t border-[#1e1e2e] text-[10px] text-slate-600">
+        <div className="flex items-center gap-2 sm:gap-4 pt-1 border-t border-[#1e1e2e] text-[9px] sm:text-[10px] text-slate-600 flex-wrap">
           <span>Tick latency: <span className={`font-mono ${health.tick_latency_ms > 500 ? "text-yellow-400" : "text-slate-400"}`}>{health.tick_latency_ms}ms</span></span>
           <span>Uptime: <span className="font-mono text-slate-400">{Math.floor(health.uptime_seconds / 60)}m</span></span>
           <span>Signals: <span className="font-mono text-slate-400">{health.signal_history_count}</span></span>

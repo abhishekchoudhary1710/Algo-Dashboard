@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import CandlestickChart from "@/components/dashboard/CandlestickChart";
-import type { CandleUpdate, SignalEvent } from "@/lib/api";
 
 export default function ChartPage() {
   return (
