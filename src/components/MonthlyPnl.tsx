@@ -8,6 +8,7 @@ import {
   DailyTradePnl,
   DailyPnl,
 } from "@/lib/api";
+import Explainable from "@/components/Explainable";
 
 export default function MonthlyPnl() {
   const [tradeData, setTradeData] = useState<MonthlyTradesResponse | null>(null);
@@ -91,30 +92,42 @@ function TradeBasedPnl({ data }: { data: MonthlyTradesResponse }) {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <SummaryCard label="Trading Days" value={data.total_days} />
-        <SummaryCard label="Total Trades" value={data.total_trades} />
-        <SummaryCard
-          label="Total P&L"
-          value={`${data.total_pnl > 0 ? "+" : ""}${data.total_pnl.toFixed(2)}`}
-          color={data.total_pnl > 0 ? "text-green-400" : data.total_pnl < 0 ? "text-red-400" : "text-white"}
-        />
-        <SummaryCard
-          label="Win Rate"
-          value={`${data.overall_win_rate}%`}
-          color={data.overall_win_rate >= 60 ? "text-green-400" : data.overall_win_rate >= 40 ? "text-yellow-400" : "text-red-400"}
-        />
-        <SummaryCard
-          label="Avg P&L / Day"
-          value={data.total_days > 0 ? (data.total_pnl / data.total_days).toFixed(2) : "0"}
-          color={data.total_pnl >= 0 ? "text-green-400" : "text-red-400"}
-        />
+        <Explainable title="Trading Days" explanation="Number of days in the current month where at least one trade was executed. Weekends and holidays are excluded.">
+          <SummaryCard label="Trading Days" value={data.total_days} />
+        </Explainable>
+        <Explainable title="Total Trades" explanation="Total number of trades executed across all trading days this month.">
+          <SummaryCard label="Total Trades" value={data.total_trades} />
+        </Explainable>
+        <Explainable title="Total P&L" explanation="Cumulative realized profit/loss for the month. Sum of all individual trade P&Ls across all trading days.\n\nPositive (green) = net profitable month.\nNegative (red) = net loss month.">
+          <SummaryCard
+            label="Total P&L"
+            value={`${data.total_pnl > 0 ? "+" : ""}${data.total_pnl.toFixed(2)}`}
+            color={data.total_pnl > 0 ? "text-green-400" : data.total_pnl < 0 ? "text-red-400" : "text-white"}
+          />
+        </Explainable>
+        <Explainable title="Win Rate" explanation="Percentage of total trades that were profitable this month.\n\nCalculated as: (Winning Trades ÷ Total Trades) × 100\n\nGreen ≥60%, Yellow 40-60%, Red <40%.">
+          <SummaryCard
+            label="Win Rate"
+            value={`${data.overall_win_rate}%`}
+            color={data.overall_win_rate >= 60 ? "text-green-400" : data.overall_win_rate >= 40 ? "text-yellow-400" : "text-red-400"}
+          />
+        </Explainable>
+        <Explainable title="Avg P&L Per Day" explanation="Average daily profit/loss.\n\nCalculated as: Total P&L ÷ Number of Trading Days\n\nShows how much the system makes or loses on an average trading day.">
+          <SummaryCard
+            label="Avg P&L / Day"
+            value={data.total_days > 0 ? (data.total_pnl / data.total_days).toFixed(2) : "0"}
+            color={data.total_pnl >= 0 ? "text-green-400" : "text-red-400"}
+          />
+        </Explainable>
       </div>
 
       {/* Equity Curve */}
       <div className="bg-[#12121a] rounded-xl p-4 border border-[#1e1e2e]">
-        <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-4">
-          Equity Curve (Cumulative P&L)
-        </h3>
+        <Explainable title="Equity Curve" explanation="Visual representation of cumulative P&L over time. Each bar shows the running total of all profits and losses up to that day.\n\nBars above the center line (green) = cumulative profit. Below (red) = cumulative loss.\n\nA consistently rising curve indicates a profitable system. Dips show drawdown periods.\n\nHover over bars to see exact values.">
+          <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-4">
+            Equity Curve (Cumulative P&L)
+          </h3>
+        </Explainable>
         <div className="flex items-end gap-1 h-32 relative">
           {/* Zero line */}
           <div className="absolute left-0 right-0 border-t border-dashed border-slate-600" style={{ bottom: "50%" }} />
@@ -150,9 +163,11 @@ function TradeBasedPnl({ data }: { data: MonthlyTradesResponse }) {
 
       {/* Daily P&L Bar Chart */}
       <div className="bg-[#12121a] rounded-xl p-4 border border-[#1e1e2e]">
-        <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-4">
-          Daily P&L
-        </h3>
+        <Explainable title="Daily P&L Chart" explanation="Bar chart showing profit/loss for each individual trading day.\n\nGreen bars = profitable days. Red bars = loss days.\n\nBar height is proportional to the P&L amount. Hover over bars to see exact values with win/loss counts.">
+          <h3 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-4">
+            Daily P&L
+          </h3>
+        </Explainable>
         <div className="flex items-end gap-1 h-32 relative">
           <div className="absolute left-0 right-0 border-t border-dashed border-slate-600" style={{ bottom: "50%" }} />
           {data.daily.map((day) => {

@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { fetchAPI } from "@/lib/api";
 import type { Trade, TradesHistoryResponse } from "@/lib/api";
+import Explainable from "@/components/Explainable";
 
 // ── Filter state ────────────────────────────────────────────────────────────
 interface Filters {
@@ -368,9 +369,10 @@ export default function BacktestPage() {
           </div>
         </div>
         {/* Min RR */}
-        <div>
-          <label className="text-[10px] text-slate-600 uppercase tracking-wider block mb-1">Min RR: {filters.minRR.toFixed(1)}</label>
-          <input
+        <Explainable title="Min R:R Filter" explanation="Filter trades by minimum Risk-Reward ratio achieved. Only shows trades where the maximum R:R reached during the trade was at least this value.\n\nR:R = (Best Price Move in Favor) ÷ (Risk = Entry to Stop Loss distance)\n\nSet to 0 to show all trades.">
+          <div>
+            <label className="text-[10px] text-slate-600 uppercase tracking-wider block mb-1">Min RR: {filters.minRR.toFixed(1)}</label>
+            <input
             type="range"
             min="0"
             max="4"
@@ -379,25 +381,32 @@ export default function BacktestPage() {
             onChange={(e) => setFilters((f) => ({ ...f, minRR: parseFloat(e.target.value) }))}
             className="w-24 accent-slate-500"
           />
-        </div>
+          </div>
+        </Explainable>
         {/* Summary */}
         <div className="ml-auto flex gap-4 text-xs">
-          <div className="text-center">
-            <div className="text-slate-600 text-[10px] uppercase">Trades</div>
-            <div className="font-mono font-bold text-slate-200">{filtered.length}</div>
-          </div>
-          <div className="text-center">
-            <div className="text-slate-600 text-[10px] uppercase">Win Rate</div>
-            <div className="font-mono font-bold text-slate-200">
-              {wins + losses > 0 ? `${Math.round((wins / (wins + losses)) * 100)}%` : "\u2014"}
+          <Explainable title="Filtered Trades" explanation="Total number of trades matching your current filter criteria (date range, strategies, direction, min R:R).">
+            <div className="text-center">
+              <div className="text-slate-600 text-[10px] uppercase">Trades</div>
+              <div className="font-mono font-bold text-slate-200">{filtered.length}</div>
             </div>
-          </div>
-          <div className="text-center">
-            <div className="text-slate-600 text-[10px] uppercase">Net PnL</div>
-            <div className={`font-mono font-bold ${totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
-              {totalPnl >= 0 ? "+" : ""}{totalPnl.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+          </Explainable>
+          <Explainable title="Win Rate" explanation="Percentage of filtered closed trades that were profitable.\n\nCalculated as: Winners ÷ (Winners + Losers) × 100\n\nOnly includes closed trades — open trades are excluded from this calculation.">
+            <div className="text-center">
+              <div className="text-slate-600 text-[10px] uppercase">Win Rate</div>
+              <div className="font-mono font-bold text-slate-200">
+                {wins + losses > 0 ? `${Math.round((wins / (wins + losses)) * 100)}%` : "\u2014"}
+              </div>
             </div>
-          </div>
+          </Explainable>
+          <Explainable title="Net P&L" explanation="Total realized profit/loss across all filtered trades.\n\nCalculated as: Sum of (Exit Price − Entry Price) × Quantity for each closed trade.\n\nGreen = net profit, Red = net loss.">
+            <div className="text-center">
+              <div className="text-slate-600 text-[10px] uppercase">Net PnL</div>
+              <div className={`font-mono font-bold ${totalPnl >= 0 ? "text-emerald-400" : "text-red-400"}`}>
+                {totalPnl >= 0 ? "+" : ""}{totalPnl.toLocaleString("en-IN", { maximumFractionDigits: 0 })}
+              </div>
+            </div>
+          </Explainable>
         </div>
       </div>
 
@@ -411,10 +420,18 @@ export default function BacktestPage() {
         <>
           {/* Charts grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <EquityCurve trades={filtered} />
-            <DrawdownCurve trades={filtered} />
-            <TradesByHour trades={filtered} />
-            <SLvsTargetRatio trades={filtered} />
+            <Explainable title="Equity Curve" explanation="Cumulative P&L plotted over time across all filtered trades. Each point on the line represents the running total after each trade exit.\n\nRising line = consistently profitable. A steep dip = drawdown period.\n\nGreen line if net positive, red if net negative.">
+              <EquityCurve trades={filtered} />
+            </Explainable>
+            <Explainable title="Drawdown Curve" explanation="Shows the drop from peak equity at each point in time.\n\nCalculated as: Current Cumulative P&L − Highest Cumulative P&L reached so far\n\nDrawdown is always ≤0. A deeper curve means the system experienced larger losing streaks. Max drawdown is the worst peak-to-trough decline — a key risk metric.">
+              <DrawdownCurve trades={filtered} />
+            </Explainable>
+            <Explainable title="Trades by Hour" explanation="Distribution of trade entries by hour of the day (9 AM to 3 PM IST market hours).\n\nHelps identify which hours generate the most trade setups. Can reveal if the system is more active during market open, midday, or close.">
+              <TradesByHour trades={filtered} />
+            </Explainable>
+            <Explainable title="SL vs Target Ratio" explanation="For each strategy, shows the proportion of exits that were:\n\n• SL Hit (red) — trade hit stop loss\n• Target (green) — trade hit profit target\n• Timeout (yellow) — trade exited at market close or time limit\n\nA healthy system has more green (targets) than red (SL hits).">
+              <SLvsTargetRatio trades={filtered} />
+            </Explainable>
           </div>
 
           {/* Trade table */}

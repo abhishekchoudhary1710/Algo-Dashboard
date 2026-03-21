@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { fetchAPI } from "@/lib/api";
 import type { TradeSummary, Trade, TradesResponse } from "@/lib/api";
+import Explainable from "@/components/Explainable";
 
 function PnlBadge({ value }: { value: number | null }) {
   if (value === null || value === undefined) return <span className="text-slate-500">--</span>;
@@ -95,27 +96,43 @@ export default function TradesPage() {
       {/* Summary Cards */}
       {summary && (
         <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
-          <SummaryCard label="Total Trades" value={summary.total_trades} />
-          <SummaryCard label="Open" value={summary.open_trades} color="text-blue-400" />
-          <SummaryCard label="Closed" value={summary.closed_trades} />
-          <SummaryCard
-            label="Total P&L"
-            value={summary.total_pnl === 0 ? "0.00" : `${summary.total_pnl > 0 ? "+" : ""}${summary.total_pnl.toFixed(2)}`}
-            color={summary.total_pnl > 0 ? "text-green-400" : summary.total_pnl < 0 ? "text-red-400" : "text-slate-300"}
-          />
-          <SummaryCard
-            label="Win Rate"
-            value={`${summary.win_rate}%`}
-            color={summary.win_rate >= 60 ? "text-green-400" : summary.win_rate >= 40 ? "text-yellow-400" : "text-red-400"}
-          />
-          <SummaryCard label="Winners" value={summary.winners} color="text-green-400" />
-          <SummaryCard label="Losers" value={summary.losers} color="text-red-400" />
-          <SummaryCard
-            label="Best / Worst"
-            value={`${summary.best_trade > 0 ? "+" : ""}${summary.best_trade.toFixed(0)} / ${summary.worst_trade.toFixed(0)}`}
-            color="text-slate-300"
-            small
-          />
+          <Explainable title="Total Trades" explanation="Total number of trades (both open and closed) placed today across all strategies.">
+            <SummaryCard label="Total Trades" value={summary.total_trades} />
+          </Explainable>
+          <Explainable title="Open Trades" explanation="Number of trades currently open/active. These have been entered but not yet exited (no SL hit, target hit, or timeout).">
+            <SummaryCard label="Open" value={summary.open_trades} color="text-blue-400" />
+          </Explainable>
+          <Explainable title="Closed Trades" explanation="Number of trades that have been fully exited today — either by stop loss, target, timeout, or manual close.">
+            <SummaryCard label="Closed" value={summary.closed_trades} />
+          </Explainable>
+          <Explainable title="Total P&L" explanation="Sum of realized profit/loss from all closed trades today. Calculated as: Σ (Exit Price − Entry Price) × Quantity for each closed trade. Positive (green) means net profit, negative (red) means net loss.">
+            <SummaryCard
+              label="Total P&L"
+              value={summary.total_pnl === 0 ? "0.00" : `${summary.total_pnl > 0 ? "+" : ""}${summary.total_pnl.toFixed(2)}`}
+              color={summary.total_pnl > 0 ? "text-green-400" : summary.total_pnl < 0 ? "text-red-400" : "text-slate-300"}
+            />
+          </Explainable>
+          <Explainable title="Win Rate" explanation="Percentage of closed trades that were profitable.\n\nCalculated as: (Winners ÷ Total Closed Trades) × 100\n\nColor coding: Green (≥60%), Yellow (40-60%), Red (<40%).">
+            <SummaryCard
+              label="Win Rate"
+              value={`${summary.win_rate}%`}
+              color={summary.win_rate >= 60 ? "text-green-400" : summary.win_rate >= 40 ? "text-yellow-400" : "text-red-400"}
+            />
+          </Explainable>
+          <Explainable title="Winners" explanation="Number of closed trades that exited with a positive P&L (profit > 0).">
+            <SummaryCard label="Winners" value={summary.winners} color="text-green-400" />
+          </Explainable>
+          <Explainable title="Losers" explanation="Number of closed trades that exited with a negative P&L (loss).">
+            <SummaryCard label="Losers" value={summary.losers} color="text-red-400" />
+          </Explainable>
+          <Explainable title="Best / Worst Trade" explanation="Best trade: highest single-trade profit today.\nWorst trade: largest single-trade loss today.\n\nHelps gauge the range of outcomes and whether gains/losses are concentrated in a few trades.">
+            <SummaryCard
+              label="Best / Worst"
+              value={`${summary.best_trade > 0 ? "+" : ""}${summary.best_trade.toFixed(0)} / ${summary.worst_trade.toFixed(0)}`}
+              color="text-slate-300"
+              small
+            />
+          </Explainable>
         </div>
       )}
 

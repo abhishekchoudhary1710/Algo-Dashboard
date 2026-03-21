@@ -1,6 +1,7 @@
 "use client";
 
 import type { SystemHealth } from "@/lib/api";
+import Explainable from "@/components/Explainable";
 
 interface Props {
   health: SystemHealth | null;
@@ -13,6 +14,7 @@ interface Indicator {
   label: string;
   status: StatusLevel;
   detail?: string;
+  explanation: string;
 }
 
 function isMarketHours(): boolean {
@@ -63,6 +65,7 @@ function buildIndicators(health: SystemHealth | null, wsConnected: boolean): Ind
       label: "WebSocket",
       status: wsConnected ? "live" : "error",
       detail: wsConnected ? "connected" : "disconnected",
+      explanation: "Real-time connection between the dashboard and the trading engine backend. WebSocket enables instant price updates, signals, and trade notifications without polling. If disconnected, the dashboard shows stale data.",
     },
     {
       label: "Broker Session",
@@ -72,12 +75,13 @@ function buildIndicators(health: SystemHealth | null, wsConnected: boolean): Ind
         ? "live"
         : marketOpen
         ? "error"
-        : "delayed", // expected offline after hours
+        : "delayed",
       detail: health?.broker_session_active
         ? "active"
         : marketOpen
         ? "offline"
         : "after hours",
+      explanation: "Authentication session with the broker (e.g., Zerodha/Kite). Required for placing orders and receiving live market data. The session is established daily via login and expires after market hours. Shows 'after hours' when market is closed (expected).",
     },
     {
       label: "Tick Storage",
@@ -87,12 +91,13 @@ function buildIndicators(health: SystemHealth | null, wsConnected: boolean): Ind
         ? "live"
         : marketOpen
         ? "error"
-        : "delayed", // no ticks expected after hours
+        : "delayed",
       detail: health?.ticks_storing
         ? "writing"
         : marketOpen
         ? "stopped"
         : "market closed",
+      explanation: "Indicates whether incoming price ticks are being saved to CSV files on disk. Ticks are stored as raw_ticks/spot_ticks_YYYYMMDD.csv for backtesting and analysis. Only active during market hours.",
     },
     {
       label: "Signal Engine",
@@ -104,12 +109,13 @@ function buildIndicators(health: SystemHealth | null, wsConnected: boolean): Ind
         ? "delayed"
         : marketOpen
         ? "error"
-        : "delayed", // quiet is expected after hours
+        : "delayed",
       detail: health?.signals_firing
         ? "firing"
         : marketOpen
         ? "quiet"
         : "after hours",
+      explanation: "The signal engine analyzes incoming candles and price data to detect trade setups. When 'firing', it is actively processing data and generating entry signals. 'Quiet' during market hours may mean no setups are forming yet.",
     },
     {
       label: "Order Exec",
@@ -121,6 +127,7 @@ function buildIndicators(health: SystemHealth | null, wsConnected: boolean): Ind
       detail: health
         ? `${health.orders_attempted_today} sent · ${health.orders_rejected_today} rejected`
         : undefined,
+      explanation: "Tracks order placement health. Shows how many orders were sent to the broker and how many were rejected today. Rejections can happen due to insufficient margin, invalid prices, or broker limits. A 'DELAYED' status means some orders were rejected.",
     },
     {
       label: "DB Writes",
@@ -132,6 +139,7 @@ function buildIndicators(health: SystemHealth | null, wsConnected: boolean): Ind
         ? "live"
         : "error",
       detail: health?.db_write_ok === null ? "disabled" : health?.db_write_ok ? "ok" : "failed",
+      explanation: "Database write health check. The bot stores trades, orders, and signals in a SQLite/PostgreSQL database. If writes fail, trade history and P&L tracking will be incomplete. 'Disabled' means DB_ENABLED is set to false.",
     },
   ];
 }
@@ -170,28 +178,33 @@ export default function ExecutionHealthPanel({ health, wsConnected }: Props) {
       {/* Indicators grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 gap-2 flex-1">
         {indicators.map((ind) => (
-          <div
-            key={ind.label}
-            className="flex items-center gap-1.5 sm:gap-2 bg-[#0d0d14] rounded-lg px-2 sm:px-3 py-2"
-          >
-            {dot(ind.status)}
-            <div className="flex-1 min-w-0">
-              <div className="text-[10px] sm:text-[11px] font-medium text-slate-300 truncate">{ind.label}</div>
-              {ind.detail && (
-                <div className="text-[9px] sm:text-[10px] text-slate-600 truncate">{ind.detail}</div>
-              )}
+          <Explainable key={ind.label} title={ind.label} explanation={ind.explanation}>
+            <div className="flex items-center gap-1.5 sm:gap-2 bg-[#0d0d14] rounded-lg px-2 sm:px-3 py-2">
+              {dot(ind.status)}
+              <div className="flex-1 min-w-0">
+                <div className="text-[10px] sm:text-[11px] font-medium text-slate-300 truncate">{ind.label}</div>
+                {ind.detail && (
+                  <div className="text-[9px] sm:text-[10px] text-slate-600 truncate">{ind.detail}</div>
+                )}
+              </div>
+              <span className="hidden sm:inline">{badge(ind.status)}</span>
             </div>
-            <span className="hidden sm:inline">{badge(ind.status)}</span>
-          </div>
+          </Explainable>
         ))}
       </div>
 
       {/* Latency row */}
       {health && (
         <div className="flex items-center gap-2 sm:gap-4 pt-1 border-t border-[#1e1e2e] text-[9px] sm:text-[10px] text-slate-600 flex-wrap">
-          <span>Tick latency: <span className={`font-mono ${health.tick_latency_ms > 500 ? "text-yellow-400" : "text-slate-400"}`}>{health.tick_latency_ms}ms</span></span>
-          <span>Uptime: <span className="font-mono text-slate-400">{Math.floor(health.uptime_seconds / 60)}m</span></span>
-          <span>Signals: <span className="font-mono text-slate-400">{health.signal_history_count}</span></span>
+          <Explainable inline title="Tick Latency" explanation="Time delay (in milliseconds) between when a price tick is generated by the exchange and when it reaches the bot. Lower is better. Values under 100ms are excellent, 100-500ms are acceptable, and above 500ms (shown in yellow) may cause delayed order execution.">
+            <span>Tick latency: <span className={`font-mono ${health.tick_latency_ms > 500 ? "text-yellow-400" : "text-slate-400"}`}>{health.tick_latency_ms}ms</span></span>
+          </Explainable>
+          <Explainable inline title="Uptime" explanation="How long the bot has been running continuously since its last restart, shown in minutes. Monitors process stability.">
+            <span>Uptime: <span className="font-mono text-slate-400">{Math.floor(health.uptime_seconds / 60)}m</span></span>
+          </Explainable>
+          <Explainable inline title="Signal Count" explanation="Total number of trading signals generated by the signal engine since the bot started. Includes all signals across all strategies — both triggered and untriggered.">
+            <span>Signals: <span className="font-mono text-slate-400">{health.signal_history_count}</span></span>
+          </Explainable>
         </div>
       )}
     </div>

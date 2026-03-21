@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { useExplainMode } from "@/contexts/ExplainModeContext";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: "▣" },
@@ -16,6 +17,7 @@ const navItems = [
 export default function Sidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const { enabled: explainMode, toggle: toggleExplain } = useExplainMode();
 
   return (
     <>
@@ -71,6 +73,26 @@ export default function Sidebar() {
             );
           })}
         </nav>
+        {/* Explain Mode Toggle */}
+        <div className="px-2 pb-2">
+          <button
+            onClick={toggleExplain}
+            className={`w-full flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-mono transition-all ${
+              explainMode
+                ? "bg-cyan-500/15 text-cyan-400 border border-cyan-500/40 shadow-lg shadow-cyan-500/10"
+                : "text-slate-500 hover:bg-[#12121a] hover:text-slate-300 border border-transparent"
+            }`}
+          >
+            <span className={`text-sm ${explainMode ? "text-cyan-400" : "text-slate-600"}`}>?</span>
+            <span>Explain Mode</span>
+            {explainMode && (
+              <span className="ml-auto text-[9px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.5 rounded-full animate-pulse">
+                ON
+              </span>
+            )}
+          </button>
+        </div>
+
         <div className="p-4 border-t border-[#1e1e2e]">
           <p className="text-[10px] text-slate-600 font-mono">Abhishek Choudhary</p>
           <p className="text-[10px] text-slate-700 font-mono">AI/ML Developer</p>

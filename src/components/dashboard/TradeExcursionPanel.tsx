@@ -1,6 +1,7 @@
 "use client";
 
 import type { TradeExcursion } from "@/lib/api";
+import Explainable from "@/components/Explainable";
 
 interface TradeExcursionPanelProps {
   excursions: TradeExcursion[];
@@ -81,14 +82,19 @@ function RRBar({ rr }: { rr: number }) {
 export default function TradeExcursionPanel({ excursions }: TradeExcursionPanelProps) {
   return (
     <div className="bg-[#12121a] border border-[#1e1e2e] rounded-xl h-full flex flex-col">
-      <div className="px-4 py-3 border-b border-[#1e1e2e] flex items-center justify-between flex-shrink-0">
-        <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">
-          Trade Excursions
-        </span>
-        <span className="text-[10px] font-mono text-slate-600">
-          {excursions.length} trade{excursions.length !== 1 ? "s" : ""}
-        </span>
-      </div>
+      <Explainable
+        title="Trade Excursions"
+        explanation="Tracks how far each active/completed trade moved in your favor (MFE) and against you (MAE) in real-time. Excursion analysis helps evaluate trade quality beyond just win/loss — showing if you're capturing enough of the move or if exits are too early/late."
+      >
+        <div className="px-4 py-3 border-b border-[#1e1e2e] flex items-center justify-between flex-shrink-0">
+          <span className="text-xs font-semibold tracking-widest text-slate-500 uppercase">
+            Trade Excursions
+          </span>
+          <span className="text-[10px] font-mono text-slate-600">
+            {excursions.length} trade{excursions.length !== 1 ? "s" : ""}
+          </span>
+        </div>
+      </Explainable>
 
       <div className="overflow-y-auto flex-1 px-2 py-2 space-y-2">
         {excursions.length === 0 ? (
@@ -131,44 +137,60 @@ export default function TradeExcursionPanel({ excursions }: TradeExcursionPanelP
 
                 {/* Row 2: SL values side-by-side */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-600 w-12">Spot SL</span>
-                    <span className="text-[10px] font-mono text-slate-300">
-                      {t.spot_sl ? t.spot_sl.toFixed(1) : "\u2014"}
-                    </span>
-                    {t.spot_sl_hit && (
-                      <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-1 rounded">HIT</span>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-[10px] text-slate-600 w-12">Opt SL</span>
-                    <span className="text-[10px] font-mono text-slate-300">
-                      {t.option_sl ? t.option_sl.toFixed(1) : "\u2014"}
-                    </span>
-                    {t.option_sl_hit && (
-                      <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-1 rounded">HIT</span>
-                    )}
-                  </div>
+                  <Explainable title="Spot Stop Loss" explanation="The NIFTY spot index price level at which this trade's stop loss is set. If the spot price crosses this level, the trade is exited to limit losses. 'HIT' badge means this SL was triggered during the trade.">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-600 w-12">Spot SL</span>
+                      <span className="text-[10px] font-mono text-slate-300">
+                        {t.spot_sl ? t.spot_sl.toFixed(1) : "\u2014"}
+                      </span>
+                      {t.spot_sl_hit && (
+                        <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-1 rounded">HIT</span>
+                      )}
+                    </div>
+                  </Explainable>
+                  <Explainable title="Option Stop Loss" explanation="The option premium price at which the stop loss is set. This is a separate SL from the spot SL — it triggers if the option price drops to this level. Options can move differently from spot due to IV changes and time decay.">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-slate-600 w-12">Opt SL</span>
+                      <span className="text-[10px] font-mono text-slate-300">
+                        {t.option_sl ? t.option_sl.toFixed(1) : "\u2014"}
+                      </span>
+                      {t.option_sl_hit && (
+                        <span className="text-[9px] font-bold text-red-400 bg-red-500/10 px-1 rounded">HIT</span>
+                      )}
+                    </div>
+                  </Explainable>
                 </div>
 
                 {/* Row 3: RR Progress Bars */}
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <div className="text-[10px] text-slate-600 mb-0.5">Spot R:R</div>
-                    <RRBar rr={t.spot_rr_achieved} />
-                  </div>
-                  <div>
-                    <div className="text-[10px] text-slate-600 mb-0.5">Option R:R</div>
-                    <RRBar rr={t.option_rr_achieved} />
-                  </div>
+                  <Explainable title="Spot R:R (Risk-Reward)" explanation="Reward-to-Risk ratio based on spot (index) price movement.\n\nCalculated as: (Current Favorable Move) ÷ (Risk = Entry − Stop Loss)\n\nThe progress bar fills toward a 2.0 target. Colors:\n• Red (<1.0) — risk exceeds reward so far\n• Yellow (1.0–2.0) — in profit but below target\n• Green (≥2.0) — target R:R achieved">
+                    <div>
+                      <div className="text-[10px] text-slate-600 mb-0.5">Spot R:R</div>
+                      <RRBar rr={t.spot_rr_achieved} />
+                    </div>
+                  </Explainable>
+                  <Explainable title="Option R:R (Risk-Reward)" explanation="Reward-to-Risk ratio based on option premium movement.\n\nCalculated as: (Option Price Move in Favor) ÷ (Option Premium Risked)\n\nThis can differ from Spot R:R because option premiums are affected by delta, theta (time decay), and implied volatility — not just the underlying spot price.">
+                    <div>
+                      <div className="text-[10px] text-slate-600 mb-0.5">Option R:R</div>
+                      <RRBar rr={t.option_rr_achieved} />
+                    </div>
+                  </Explainable>
                 </div>
 
                 {/* Row 4: MFE / MAE compact */}
                 <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-[10px] text-slate-600 pt-1 border-t border-[#1e1e2e]">
-                  <span>MFE <span className="font-mono text-emerald-400">{t.spot_mfe.toFixed(1)}</span></span>
-                  <span>MAE <span className="font-mono text-red-400">{t.spot_mae.toFixed(1)}</span></span>
-                  <span>Opt MFE <span className="font-mono text-emerald-400">{t.option_mfe.toFixed(1)}</span></span>
-                  <span>Opt MAE <span className="font-mono text-red-400">{t.option_mae.toFixed(1)}</span></span>
+                  <Explainable inline title="MFE (Max Favorable Excursion)" explanation="The maximum profit point (in spot price) this trade reached before the current price. Shows the best the trade has been. If MFE is much higher than the final exit, it means the trade gave back significant gains.">
+                    <span>MFE <span className="font-mono text-emerald-400">{t.spot_mfe.toFixed(1)}</span></span>
+                  </Explainable>
+                  <Explainable inline title="MAE (Max Adverse Excursion)" explanation="The maximum loss point (in spot price) this trade reached. Shows the worst drawdown during the trade. A high MAE relative to the stop loss suggests the trade came close to being stopped out.">
+                    <span>MAE <span className="font-mono text-red-400">{t.spot_mae.toFixed(1)}</span></span>
+                  </Explainable>
+                  <Explainable inline title="Option MFE" explanation="Maximum favorable movement in the option premium price. Shows the highest unrealized profit the option position reached during this trade.">
+                    <span>Opt MFE <span className="font-mono text-emerald-400">{t.option_mfe.toFixed(1)}</span></span>
+                  </Explainable>
+                  <Explainable inline title="Option MAE" explanation="Maximum adverse movement in the option premium price. Shows the deepest unrealized loss the option position experienced during this trade.">
+                    <span>Opt MAE <span className="font-mono text-red-400">{t.option_mae.toFixed(1)}</span></span>
+                  </Explainable>
                 </div>
               </div>
             );
