@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://34.47.224.176:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
 export async function fetchAPI<T>(endpoint: string): Promise<T> {
   const res = await fetch(`${API_URL}${endpoint}`, {

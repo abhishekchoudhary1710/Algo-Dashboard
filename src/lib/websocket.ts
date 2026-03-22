@@ -10,7 +10,7 @@ import type {
 
 const WS_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace("http", "ws") ||
-  "ws://34.47.224.176:8000";
+  "ws://localhost:8000";
 
 export interface WSHandlers {
   onTick: (data: TickData) => void;
