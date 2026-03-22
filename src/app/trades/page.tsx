@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { fetchAPI } from "@/lib/api";
-import type { TradeSummary, Trade, TradesResponse } from "@/lib/api";
+import type { TradeSummary, Trade, TradesHistoryResponse } from "@/lib/api";
 import Explainable from "@/components/Explainable";
 
 function PnlBadge({ value }: { value: number | null }) {
@@ -45,12 +45,29 @@ export default function TradesPage() {
 
   const fetchData = useCallback(async () => {
     try {
-      const [summaryData, tradesData] = await Promise.all([
-        fetchAPI<TradeSummary>("/api/trades/summary"),
-        fetchAPI<TradesResponse>("/api/trades/today"),
-      ]);
-      setSummary(summaryData);
-      setAllTrades(tradesData.trades);
+      const historyData = await fetchAPI<TradesHistoryResponse>("/api/trades/history?days=90");
+      const trades = historyData.trades;
+      setAllTrades(trades);
+
+      // Compute summary from all trades
+      const closed = trades.filter(t => t.status === "CLOSED");
+      const winners = closed.filter(t => (t.realized_pnl ?? 0) > 0);
+      const losers = closed.filter(t => (t.realized_pnl ?? 0) <= 0);
+      const totalPnl = closed.reduce((sum, t) => sum + (t.realized_pnl ?? 0), 0);
+      const pnls = closed.map(t => t.realized_pnl ?? 0);
+      setSummary({
+        date: "All trades",
+        total_trades: trades.length,
+        open_trades: trades.filter(t => t.status === "OPEN" || t.status === "PARTIAL").length,
+        closed_trades: closed.length,
+        total_pnl: totalPnl,
+        winners: winners.length,
+        losers: losers.length,
+        win_rate: closed.length > 0 ? Math.round(winners.length / closed.length * 1000) / 10 : 0,
+        best_trade: pnls.length > 0 ? Math.max(...pnls) : 0,
+        worst_trade: pnls.length > 0 ? Math.min(...pnls) : 0,
+        trades: [],
+      });
       setError(null);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to load trades");
@@ -90,7 +107,7 @@ export default function TradesPage() {
     <div className="p-3 md:p-6 space-y-4 md:space-y-6 bg-[#0a0e17] min-h-screen">
       <div className="flex items-center justify-between flex-wrap gap-2">
         <h1 className="text-lg md:text-xl font-bold text-white">Trade Lifecycle</h1>
-        <p className="text-xs text-slate-500">{summary?.date || "Today"} | Auto-refresh 10s</p>
+        <p className="text-xs text-slate-500">{summary?.date || "All trades"} | Auto-refresh 10s</p>
       </div>
 
       {/* Summary Cards */}
@@ -162,7 +179,7 @@ export default function TradesPage() {
           />
         ) : (
           <div className="p-6 text-center text-slate-500 text-sm">
-            No closed trades today
+            No closed trades
           </div>
         )}
       </div>
@@ -197,6 +214,7 @@ function TradeTable({ trades, showExit }: { trades: Trade[]; showExit: boolean }
       <table className="w-full text-xs">
         <thead>
           <tr className="border-b border-[#1e1e2e] text-left">
+            <th className="px-3 py-2 text-slate-400 font-medium">Date</th>
             <th className="px-3 py-2 text-slate-400 font-medium">Time</th>
             <th className="px-3 py-2 text-slate-400 font-medium">Strategy</th>
             <th className="px-3 py-2 text-slate-400 font-medium">Direction</th>
@@ -226,6 +244,9 @@ function TradeTable({ trades, showExit }: { trades: Trade[]; showExit: boolean }
                   : ""
               }`}
             >
+              <td className="px-3 py-2 text-slate-300 font-mono">
+                {trade.entry_time ? trade.entry_time.slice(0, 10) : "--"}
+              </td>
               <td className="px-3 py-2 text-slate-300 font-mono">
                 {trade.entry_time ? trade.entry_time.slice(11, 19) : "--"}
               </td>
