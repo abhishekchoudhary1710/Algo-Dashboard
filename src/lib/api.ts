@@ -354,6 +354,8 @@ export interface Trade {
   expiry: string;
   quantity: number | null;
   realized_pnl: number | null;
+  tracking_mode?: string;
+  execution_status?: string;
   max_rr_achieved?: number | null;
   created_at?: string;
   updated_at?: string;

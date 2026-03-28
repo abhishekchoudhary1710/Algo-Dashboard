@@ -18,6 +18,7 @@ function StatusBadge({ status }: { status: string }) {
     PARTIAL: "bg-yellow-500/20 text-yellow-400 border-yellow-500/30",
     CLOSED: "bg-slate-500/20 text-slate-400 border-slate-500/30",
     CANCELLED: "bg-red-500/20 text-red-400 border-red-500/30",
+    REJECTED: "bg-orange-500/20 text-orange-400 border-orange-500/30",
   };
   return (
     <span className={`text-[10px] px-1.5 py-0.5 rounded border ${colors[status] || "bg-slate-700 text-slate-400"}`}>
@@ -40,6 +41,7 @@ function ExitBadge({ reason }: { reason: string | null }) {
 export default function TradesPage() {
   const [summary, setSummary] = useState<TradeSummary | null>(null);
   const [allTrades, setAllTrades] = useState<Trade[]>([]);
+  const [rejectedCount, setRejectedCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -49,16 +51,18 @@ export default function TradesPage() {
       const trades = historyData.trades;
       setAllTrades(trades);
 
-      // Compute summary from all trades
-      const closed = trades.filter(t => t.status === "CLOSED");
+      // Compute summary from all trades (exclude REJECTED from main stats)
+      const realTrades = trades.filter(t => t.execution_status !== "REJECTED");
+      const closed = realTrades.filter(t => t.status === "CLOSED");
       const winners = closed.filter(t => (t.realized_pnl ?? 0) > 0);
       const losers = closed.filter(t => (t.realized_pnl ?? 0) <= 0);
       const totalPnl = closed.reduce((sum, t) => sum + (t.realized_pnl ?? 0), 0);
       const pnls = closed.map(t => t.realized_pnl ?? 0);
+      setRejectedCount(trades.filter(t => t.execution_status === "REJECTED").length);
       setSummary({
         date: "All trades",
-        total_trades: trades.length,
-        open_trades: trades.filter(t => t.status === "OPEN" || t.status === "PARTIAL").length,
+        total_trades: realTrades.length,
+        open_trades: realTrades.filter(t => t.status === "OPEN" || t.status === "PARTIAL").length,
         closed_trades: closed.length,
         total_pnl: totalPnl,
         winners: winners.length,
@@ -142,6 +146,11 @@ export default function TradesPage() {
           <Explainable title="Losers" explanation="Number of closed trades that exited with a negative P&L (loss).">
             <SummaryCard label="Losers" value={summary.losers} color="text-red-400" />
           </Explainable>
+          {rejectedCount > 0 && (
+            <Explainable title="Rejected" explanation="Orders rejected by broker — tracked as virtual/paper trades for analysis.">
+              <SummaryCard label="Rejected" value={rejectedCount} color="text-orange-400" />
+            </Explainable>
+          )}
           <Explainable title="Best / Worst Trade" explanation="Best trade: highest single-trade profit today.\nWorst trade: largest single-trade loss today.\n\nHelps gauge the range of outcomes and whether gains/losses are concentrated in a few trades.">
             <SummaryCard
               label="Best / Worst"
@@ -167,14 +176,33 @@ export default function TradesPage() {
         </div>
       )}
 
+      {/* Rejected / Virtual Trades */}
+      {allTrades.filter(t => t.execution_status === "REJECTED").length > 0 && (
+        <div className="bg-[#12121a] rounded-xl border border-orange-500/30 overflow-hidden">
+          <div className="px-4 py-2 border-b border-[#1e1e2e] flex items-center gap-2">
+            <div className="w-2 h-2 rounded-full bg-orange-500" />
+            <p className="text-sm font-medium text-orange-400">
+              Rejected / Virtual Trades
+              <span className="text-xs text-slate-500 ml-2">
+                (broker rejected — tracked as paper)
+              </span>
+            </p>
+          </div>
+          <TradeTable
+            trades={allTrades.filter(t => t.execution_status === "REJECTED")}
+            showExit={allTrades.filter(t => t.execution_status === "REJECTED").some(t => t.status === "CLOSED")}
+          />
+        </div>
+      )}
+
       {/* Closed Trades */}
       <div className="bg-[#12121a] rounded-xl border border-[#1e1e2e] overflow-hidden">
         <div className="px-4 py-2 border-b border-[#1e1e2e]">
           <p className="text-sm font-medium text-slate-400">Closed Trades</p>
         </div>
-        {allTrades.filter(t => t.status === "CLOSED").length > 0 ? (
+        {allTrades.filter(t => t.status === "CLOSED" && t.execution_status !== "REJECTED").length > 0 ? (
           <TradeTable
-            trades={allTrades.filter(t => t.status === "CLOSED")}
+            trades={allTrades.filter(t => t.status === "CLOSED" && t.execution_status !== "REJECTED")}
             showExit
           />
         ) : (
