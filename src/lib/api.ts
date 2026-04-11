@@ -1,4 +1,7 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+// All browser API calls go through the Next.js /backend/* rewrite proxy.
+// This means only port 3000 needs to be publicly open — Next.js forwards
+// the requests to the Python backend on port 8000 server-side.
+const API_URL = "/backend";
 
 export async function fetchAPI<T>(endpoint: string): Promise<T> {
   const res = await fetch(`${API_URL}${endpoint}`, {
@@ -403,6 +406,32 @@ export interface MonthlyTradesResponse {
   total_trades: number;
   total_pnl: number;
   overall_win_rate: number;
+}
+
+// --- Option Strikes ---
+
+export interface OptionStrike {
+  token: string;
+  symbol: string;
+  strike: number;
+  option_type: "CE" | "PE";
+  expiry: string;
+  ltp: number | null;
+  candles_1m: number;
+  candles_5m: number;
+}
+
+export interface OptionsListResponse {
+  options: OptionStrike[];
+  count: number;
+}
+
+export interface OptionCandlesResponse {
+  candles: OHLCCandle[];
+  current_candle: OHLCCandle | null;
+  token: string;
+  timeframe: string;
+  count: number;
 }
 
 // --- DB Health ---
