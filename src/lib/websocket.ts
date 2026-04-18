@@ -10,7 +10,9 @@ import type {
 
 const WS_URL =
   process.env.NEXT_PUBLIC_API_URL?.replace("http", "ws") ||
-  "ws://localhost:8000";
+  (typeof window !== "undefined"
+    ? `${window.location.protocol === "https:" ? "wss" : "ws"}://${window.location.host}`
+    : "ws://localhost:8000");
 
 export interface WSHandlers {
   onTick: (data: TickData) => void;

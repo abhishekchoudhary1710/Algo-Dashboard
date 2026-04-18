@@ -107,6 +107,14 @@ export default function TradesPage() {
     );
   }
 
+  const rejectedTrades = allTrades.filter(t => t.execution_status === "REJECTED");
+  const openTrades = allTrades.filter(
+    t => (t.status === "OPEN" || t.status === "PARTIAL") && t.execution_status !== "REJECTED"
+  );
+  const closedTrades = allTrades.filter(
+    t => t.status === "CLOSED" && t.execution_status !== "REJECTED"
+  );
+
   return (
     <div className="p-3 md:p-6 space-y-4 md:space-y-6 bg-[#0a0e17] min-h-screen">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -163,21 +171,21 @@ export default function TradesPage() {
       )}
 
       {/* Open Trades */}
-      {allTrades.filter(t => t.status === "OPEN" || t.status === "PARTIAL").length > 0 && (
+      {openTrades.length > 0 && (
         <div className="bg-slate-800 rounded-xl border border-blue-500/30 overflow-hidden">
           <div className="px-4 py-2 border-b border-[#1e1e2e] flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
             <p className="text-sm font-medium text-blue-400">Open Trades</p>
           </div>
           <TradeTable
-            trades={allTrades.filter(t => t.status === "OPEN" || t.status === "PARTIAL")}
+            trades={openTrades}
             showExit={false}
           />
         </div>
       )}
 
       {/* Rejected / Virtual Trades */}
-      {allTrades.filter(t => t.execution_status === "REJECTED").length > 0 && (
+      {rejectedTrades.length > 0 && (
         <div className="bg-[#12121a] rounded-xl border border-orange-500/30 overflow-hidden">
           <div className="px-4 py-2 border-b border-[#1e1e2e] flex items-center gap-2">
             <div className="w-2 h-2 rounded-full bg-orange-500" />
@@ -189,8 +197,8 @@ export default function TradesPage() {
             </p>
           </div>
           <TradeTable
-            trades={allTrades.filter(t => t.execution_status === "REJECTED")}
-            showExit={allTrades.filter(t => t.execution_status === "REJECTED").some(t => t.status === "CLOSED")}
+            trades={rejectedTrades}
+            showExit={rejectedTrades.some(t => t.status === "CLOSED")}
           />
         </div>
       )}
@@ -200,9 +208,9 @@ export default function TradesPage() {
         <div className="px-4 py-2 border-b border-[#1e1e2e]">
           <p className="text-sm font-medium text-slate-400">Closed Trades</p>
         </div>
-        {allTrades.filter(t => t.status === "CLOSED" && t.execution_status !== "REJECTED").length > 0 ? (
+        {closedTrades.length > 0 ? (
           <TradeTable
-            trades={allTrades.filter(t => t.status === "CLOSED" && t.execution_status !== "REJECTED")}
+            trades={closedTrades}
             showExit
           />
         ) : (
