@@ -35,6 +35,22 @@ function deriveDirection(t: Trade): "LONG" | "SHORT" {
   return "LONG";
 }
 
+/**
+ * Simulated P&L for a trade at a given min RR target.
+ * SL trades keep their actual loss. All other trades are re-priced as if
+ * you had exited exactly at minRR: sl_risk = actual_pnl / max_rr_achieved,
+ * simulated_pnl = sl_risk × minRR.
+ */
+function computeSimPnl(t: Trade, minRR: number): number {
+  const actual = t.realized_pnl ?? 0;
+  if (minRR <= 0) return actual;
+  const isSL = (t.exit_reason || "").toUpperCase().includes("SL");
+  if (isSL) return actual;
+  const rr = t.max_rr_achieved ?? 0;
+  if (rr <= 0) return actual;
+  return (actual / rr) * minRR;
+}
+
 function formatExitReason(reason: string | null): { label: string; cls: string } {
   if (!reason) return { label: "\u2014", cls: "text-slate-600" };
   const r = reason.toUpperCase();
@@ -66,7 +82,7 @@ function defaultDateTo(): string {
 
 // ── Chart helpers (pure SVG) ────────────────────────────────────────────────
 
-function EquityCurve({ trades }: { trades: Trade[] }) {
+function EquityCurve({ trades, minRR }: { trades: Trade[]; minRR: number }) {
   const sorted = [...trades]
     .filter((t) => t.realized_pnl != null && t.exit_time)
     .sort((a, b) => new Date(a.exit_time!).getTime() - new Date(b.exit_time!).getTime());
@@ -75,7 +91,7 @@ function EquityCurve({ trades }: { trades: Trade[] }) {
 
   let cum = 0;
   const points = sorted.map((t) => {
-    cum += t.realized_pnl!;
+    cum += computeSimPnl(t, minRR);
     return cum;
   });
 
@@ -109,7 +125,7 @@ function EquityCurve({ trades }: { trades: Trade[] }) {
   );
 }
 
-function DrawdownCurve({ trades }: { trades: Trade[] }) {
+function DrawdownCurve({ trades, minRR }: { trades: Trade[]; minRR: number }) {
   const sorted = [...trades]
     .filter((t) => t.realized_pnl != null && t.exit_time)
     .sort((a, b) => new Date(a.exit_time!).getTime() - new Date(b.exit_time!).getTime());
@@ -118,7 +134,7 @@ function DrawdownCurve({ trades }: { trades: Trade[] }) {
 
   let cum = 0, peak = 0;
   const dd = sorted.map((t) => {
-    cum += t.realized_pnl!;
+    cum += computeSimPnl(t, minRR);
     peak = Math.max(peak, cum);
     return cum - peak;
   });
@@ -277,8 +293,11 @@ export default function BacktestPage() {
       const dir = deriveDirection(t);
       if (filters.direction === "LONG" && dir !== "LONG") return false;
       if (filters.direction === "SHORT" && dir !== "SHORT") return false;
-      // Min RR
-      if (filters.minRR > 0 && (t.max_rr_achieved ?? 0) < filters.minRR) return false;
+      // Min RR — always include SL trades (real losses that occurred regardless of RR reached)
+      if (filters.minRR > 0 && (t.max_rr_achieved ?? 0) < filters.minRR) {
+        const isSL = (t.exit_reason || "").toUpperCase().includes("SL");
+        if (!isSL) return false;
+      }
       return true;
     });
   }, [allTrades, filters]);
@@ -292,9 +311,9 @@ export default function BacktestPage() {
     }));
   }
 
-  const totalPnl = filtered.reduce((s, t) => s + (t.realized_pnl ?? 0), 0);
-  const wins = filtered.filter((t) => (t.realized_pnl ?? 0) > 0).length;
-  const losses = filtered.filter((t) => (t.realized_pnl ?? 0) <= 0 && t.status === "CLOSED").length;
+  const totalPnl = filtered.reduce((s, t) => s + computeSimPnl(t, filters.minRR), 0);
+  const wins = filtered.filter((t) => computeSimPnl(t, filters.minRR) > 0).length;
+  const losses = filtered.filter((t) => computeSimPnl(t, filters.minRR) <= 0 && t.status === "CLOSED").length;
 
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-slate-200 p-3 md:p-4 space-y-3 md:space-y-4">
@@ -421,10 +440,10 @@ export default function BacktestPage() {
           {/* Charts grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Explainable title="Equity Curve" explanation="Cumulative P&L plotted over time across all filtered trades. Each point on the line represents the running total after each trade exit.\n\nRising line = consistently profitable. A steep dip = drawdown period.\n\nGreen line if net positive, red if net negative.">
-              <EquityCurve trades={filtered} />
+              <EquityCurve trades={filtered} minRR={filters.minRR} />
             </Explainable>
             <Explainable title="Drawdown Curve" explanation="Shows the drop from peak equity at each point in time.\n\nCalculated as: Current Cumulative P&L − Highest Cumulative P&L reached so far\n\nDrawdown is always ≤0. A deeper curve means the system experienced larger losing streaks. Max drawdown is the worst peak-to-trough decline — a key risk metric.">
-              <DrawdownCurve trades={filtered} />
+              <DrawdownCurve trades={filtered} minRR={filters.minRR} />
             </Explainable>
             <Explainable title="Trades by Hour" explanation="Distribution of trade entries by hour of the day (9 AM to 3 PM IST market hours).\n\nHelps identify which hours generate the most trade setups. Can reveal if the system is more active during market open, midday, or close.">
               <TradesByHour trades={filtered} />

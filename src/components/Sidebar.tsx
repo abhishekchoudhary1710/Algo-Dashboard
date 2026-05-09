@@ -10,6 +10,7 @@ const navItems = [
   { href: "/chart", label: "Chart", icon: "▲" },
   { href: "/trades", label: "Trades", icon: "≡" },
   { href: "/orders", label: "Orders", icon: "◈" },
+  { href: "/trade-fired", label: "Trade Debug", icon: "🔥" },
   { href: "/pnl", label: "P&L", icon: "₹" },
   { href: "/backtest", label: "Backtest", icon: "↺" },
 ];

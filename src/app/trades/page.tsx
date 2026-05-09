@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
+import Link from "next/link";
 import { fetchAPI } from "@/lib/api";
 import type { TradeSummary, Trade, TradesHistoryResponse } from "@/lib/api";
 import Explainable from "@/components/Explainable";
@@ -266,6 +267,7 @@ function TradeTable({ trades, showExit }: { trades: Trade[]; showExit: boolean }
               </>
             )}
             <th className="px-3 py-2 text-slate-400 font-medium">Status</th>
+            <th className="px-3 py-2 text-slate-400 font-medium">Chart</th>
           </tr>
         </thead>
         <tbody>
@@ -325,6 +327,15 @@ function TradeTable({ trades, showExit }: { trades: Trade[]; showExit: boolean }
               )}
               <td className="px-3 py-2">
                 <StatusBadge status={trade.status} />
+              </td>
+              <td className="px-3 py-2">
+                <Link
+                  href={`/trades/${encodeURIComponent(trade.trade_id)}/chart`}
+                  className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-amber-500/15 text-amber-400 border border-amber-500/30 hover:bg-amber-500/25 transition-colors"
+                  title="Open chart view"
+                >
+                  📊 Chart
+                </Link>
               </td>
             </tr>
           ))}

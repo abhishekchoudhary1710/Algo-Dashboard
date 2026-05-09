@@ -455,3 +455,39 @@ export interface DbHealth {
   row_counts?: Record<string, number>;
   error?: string;
 }
+
+// --- Trade Fired (debug log blocks) ---
+
+export interface TradeFiredSection {
+  title: string;
+  lines: string[];
+}
+
+export interface TradeFiredBlock {
+  source: "live" | "historical";
+  raw: string;
+  label: string;
+  historical: boolean;
+  order_id: string | null;
+  timestamp: string | null;
+  symbol: string | null;
+  strike: number | null;
+  option_type: "CE" | "PE" | null;
+  qty: number | null;
+  entry: number | null;
+  sl: number | null;
+  target: number | null;
+  status: string | null;
+  broker_error: string | null;
+  pivot: string | null;
+  pivot_candle: string | null;
+  div_type: string | null;
+  entry_method: string | null;
+  structure: Record<string, string>;
+  sections: TradeFiredSection[];
+}
+
+export interface TradeFiredResponse {
+  count: number;
+  blocks: TradeFiredBlock[];
+}
