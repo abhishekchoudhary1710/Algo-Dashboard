@@ -8,8 +8,6 @@ interface SignalFeedProps {
 }
 
 const STRATEGY_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  bullish_swing:      { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "#22c55e" },
-  bearish_swing:      { bg: "bg-red-500/10",     text: "text-red-400",     border: "#ef4444" },
   bullish_divergence: { bg: "bg-blue-500/10",    text: "text-blue-400",    border: "#3b82f6" },
   bearish_divergence: { bg: "bg-purple-500/10",  text: "text-purple-400",  border: "#a855f7" },
 };

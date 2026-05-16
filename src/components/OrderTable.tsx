@@ -4,14 +4,10 @@ import { useEffect, useState } from "react";
 import { fetchAPI, Order, OrdersResponse, Trade, TradesHistoryResponse } from "@/lib/api";
 
 const STRATEGY_LABELS: Record<string, string> = {
-  bullish_swing: "Bull Swing",
-  bearish_swing: "Bear Swing",
   bullish_divergence: "Bull Div",
   bearish_divergence: "Bear Div",
 };
 const STRATEGY_COLORS: Record<string, string> = {
-  bullish_swing: "#22c55e",
-  bearish_swing: "#ef4444",
   bullish_divergence: "#3b82f6",
   bearish_divergence: "#a855f7",
 };
@@ -121,6 +117,15 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
   const wins = trades.filter(t => (t.realized_pnl ?? 0) > 0).length;
   const closed = trades.filter(t => t.status === "CLOSED").length;
 
+  const slPnls = trades
+    .filter(t => (t.exit_reason || "").toUpperCase().includes("SL") && t.realized_pnl != null)
+    .map(t => t.realized_pnl as number);
+  const tgtPnls = trades
+    .filter(t => (t.exit_reason || "").toUpperCase().includes("TARGET") && t.realized_pnl != null)
+    .map(t => t.realized_pnl as number);
+  const avgLoss = slPnls.length > 0 ? slPnls.reduce((a, b) => a + b, 0) / slPnls.length : null;
+  const avgTarget = tgtPnls.length > 0 ? tgtPnls.reduce((a, b) => a + b, 0) / tgtPnls.length : null;
+
   return (
     <div className="bg-[#12121a] rounded-xl border border-[#1e1e2e] overflow-hidden">
       {/* Summary bar */}
@@ -135,6 +140,18 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
             <span className="text-slate-600 text-[10px]">Win Rate</span>
             <span className="font-mono font-bold text-slate-200 ml-1">
               {closed > 0 ? `${Math.round((wins / closed) * 100)}%` : "\u2014"}
+            </span>
+          </div>
+          <div className="text-center">
+            <span className="text-slate-600 text-[10px]">Avg Loss</span>
+            <span className="font-mono font-bold ml-1 text-red-400">
+              {avgLoss != null ? avgLoss.toLocaleString("en-IN", { maximumFractionDigits: 0 }) : "—"}
+            </span>
+          </div>
+          <div className="text-center">
+            <span className="text-slate-600 text-[10px]">Avg Target</span>
+            <span className="font-mono font-bold ml-1 text-emerald-400">
+              {avgTarget != null ? `+${avgTarget.toLocaleString("en-IN", { maximumFractionDigits: 0 })}` : "—"}
             </span>
           </div>
           <div className="text-center">
@@ -157,6 +174,7 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
               <th className="text-right px-3 py-2 font-medium">Strike</th>
               <th className="text-right px-3 py-2 font-medium">Qty</th>
               <th className="text-right px-3 py-2 font-medium">Entry &#8377;</th>
+              <th className="text-right px-3 py-2 font-medium">SL &#8377;</th>
               <th className="text-right px-3 py-2 font-medium">Exit &#8377;</th>
               <th className="text-left px-3 py-2 font-medium">Exit Time</th>
               <th className="text-center px-3 py-2 font-medium">Reason</th>
@@ -191,6 +209,9 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
                   <td className="px-3 py-1.5 text-right font-mono text-slate-400">{t.strike ?? "\u2014"}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-slate-400">{t.quantity ?? "\u2014"}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-slate-300">{t.entry_price?.toFixed(2) ?? "\u2014"}</td>
+                  <td className="px-3 py-1.5 text-right font-mono text-red-400">
+                    {t.initial_risk != null && t.initial_risk > 0 ? t.initial_risk.toFixed(2) : "\u2014"}
+                  </td>
                   <td className="px-3 py-1.5 text-right font-mono text-slate-300">{t.exit_price?.toFixed(2) ?? "\u2014"}</td>
                   <td className="px-3 py-1.5 font-mono text-slate-500 whitespace-nowrap">{fmtTime(t.exit_time)}</td>
                   <td className="px-3 py-1.5 text-center">

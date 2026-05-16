@@ -8,12 +8,10 @@ interface TradeExcursionPanelProps {
 }
 
 const STRATEGY_BADGE: Record<string, { bg: string; text: string; label: string }> = {
-  bullish_swing:       { bg: "bg-emerald-500/15", text: "text-emerald-400", label: "Bull Swing" },
-  bearish_swing:       { bg: "bg-red-500/15",     text: "text-red-400",     label: "Bear Swing" },
   bullish_divergence:  { bg: "bg-blue-500/15",    text: "text-blue-400",    label: "Bull Div" },
   bearish_divergence:  { bg: "bg-purple-500/15",  text: "text-purple-400",  label: "Bear Div" },
-  ce_buying:           { bg: "bg-emerald-500/15", text: "text-emerald-400", label: "Bull Swing" },
-  pe_selling:          { bg: "bg-red-500/15",     text: "text-red-400",     label: "Bear Swing" },
+  ce_buying:           { bg: "bg-emerald-500/15", text: "text-emerald-400", label: "CE Buy" },
+  pe_selling:          { bg: "bg-red-500/15",     text: "text-red-400",     label: "PE Sell" },
 };
 
 function getStrategyBadge(strategy: string) {

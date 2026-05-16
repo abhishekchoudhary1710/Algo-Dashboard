@@ -9,20 +9,16 @@ interface StrategyPerformanceProps {
 }
 
 const STRATEGY_COLORS: Record<string, string> = {
-  bullish_swing: "#22c55e",
-  bearish_swing: "#ef4444",
   bullish_divergence: "#3b82f6",
   bearish_divergence: "#a855f7",
 };
 
 const STRATEGY_LABELS: Record<string, string> = {
-  bullish_swing: "Bull Swing",
-  bearish_swing: "Bear Swing",
   bullish_divergence: "Bull Div",
   bearish_divergence: "Bear Div",
 };
 
-const ALL_STRATEGIES = ["bullish_swing", "bearish_swing", "bullish_divergence", "bearish_divergence"];
+const ALL_STRATEGIES = ["bullish_divergence", "bearish_divergence"];
 
 function emptyRow(strategy: string): StrategyPerformanceRow {
   return { strategy, total: 0, wins: 0, losses: 0, sl_hits: 0, target_hits: 0, timeout_exits: 0, avg_rr: null, net_pnl: 0 };

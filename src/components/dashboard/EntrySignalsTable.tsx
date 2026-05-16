@@ -7,8 +7,6 @@ interface EntrySignalsTableProps {
 }
 
 const STRATEGY_BADGE: Record<string, string> = {
-  bullish_swing: "bg-green-900/40 text-green-400",
-  bearish_swing: "bg-red-900/40 text-red-400",
   bullish_divergence: "bg-blue-900/40 text-blue-400",
   bearish_divergence: "bg-purple-900/40 text-purple-400",
 };

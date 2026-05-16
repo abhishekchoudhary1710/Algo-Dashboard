@@ -1,6 +1,6 @@
 "use client";
 
-import type { Strategies, SwingStrategy, DivergenceStrategy } from "@/lib/api";
+import type { Strategies, DivergenceStrategy } from "@/lib/api";
 
 interface Props {
   strategies: Strategies | null;
@@ -16,32 +16,6 @@ interface PotentialTrade {
   timeLeft: string;
   color: string;
   detail?: string; // extra context
-}
-
-function extractSwingSetup(
-  name: string,
-  direction: "LONG" | "SHORT",
-  s: SwingStrategy,
-  color: string
-): PotentialTrade | null {
-  if (!s.active) return null;
-  if (!s.D && !s.pending_setup) return null;
-
-  const allPoints = s.H1 != null && s.L1 != null && s.A != null && s.B != null && s.C != null && s.D != null;
-
-  return {
-    strategy: name,
-    direction,
-    entry: s.pending_setup?.entry_price ?? s.D,
-    sl: s.pending_setup?.stop_loss ?? (s.C != null ? s.C + (direction === "LONG" ? -0.05 : 0.05) : null),
-    target: s.pending_setup?.target ?? null,
-    structureValid: allPoints,
-    timeLeft: "\u2014",
-    color,
-    detail: allPoints
-      ? `D: ${s.D?.toFixed(1)} · C: ${s.C?.toFixed(1)}`
-      : `Forming (${[s.H1 != null ? "H1" : null, s.L1 != null ? "L1" : null, s.A != null ? "A" : null, s.B != null ? "B" : null, s.C != null ? "C" : null].filter(Boolean).join(",")})`,
-  };
 }
 
 function extractDivergenceSetups(
@@ -109,12 +83,6 @@ export default function PotentialTradesMonitor({ strategies }: Props) {
   const trades: PotentialTrade[] = [];
 
   if (strategies) {
-    const bs = extractSwingSetup("Bull Swing", "LONG", strategies.bullish_swing, "#22c55e");
-    if (bs) trades.push(bs);
-
-    const bes = extractSwingSetup("Bear Swing", "SHORT", strategies.bearish_swing, "#ef4444");
-    if (bes) trades.push(bes);
-
     trades.push(
       ...extractDivergenceSetups("Bull Div", "LONG", strategies.bullish_divergence, "#3b82f6")
     );

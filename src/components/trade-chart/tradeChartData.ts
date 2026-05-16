@@ -74,9 +74,6 @@ function pickSignalSource(trade: Trade, block: TradeFiredBlock | null): PaneInst
   const dt = (block?.div_type || "").toLowerCase();
   if (dt.includes("spot")) return "spot";
   if (dt.includes("fut") || dt.includes("future")) return "fut";
-  // Swing structure points (H1/L1/A/B/C/D) are computed on futures candles.
-  const s = (trade.strategy || "").toLowerCase();
-  if (s.includes("swing")) return "fut";
   return "fut";
 }
 
@@ -213,7 +210,7 @@ function extractStructurePoints(
     out.push({ label, price, timeUnix, raw });
   };
 
-  // Top-level structure dict (swing: H1/L1/A/B/C/D, sometimes with "value @ time")
+  // Top-level structure dict (H1/L1/A/B/C/D, sometimes with "value @ time")
   for (const [label, raw] of Object.entries(block.structure || {})) {
     const withTs = parseStructureValue(raw, tradeDate);
     if (withTs) {

@@ -2,7 +2,6 @@
 
 import type {
   Strategies,
-  SwingStrategy,
   DivergenceStrategy,
   PivotData,
   FirstCandle,
@@ -112,99 +111,6 @@ function FirstCandleSection({
   );
 }
 
-function SwingCard({
-  name,
-  strategy,
-  strategyKey,
-  accentColor,
-}: {
-  name: string;
-  strategy: SwingStrategy;
-  strategyKey: string;
-  accentColor: string;
-}) {
-  const handleToggle = async () => {
-    try {
-      await postAPI("/api/strategy/toggle", {
-        strategy: strategyKey,
-        enabled: !strategy.active,
-      });
-    } catch {
-      // Ignore
-    }
-  };
-
-  return (
-    <div
-      className={`bg-slate-800 rounded-xl p-3 border border-slate-700 border-l-2`}
-      style={{ borderLeftColor: accentColor }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-medium text-white">{name}</p>
-        <button
-          onClick={handleToggle}
-          className={`w-2.5 h-2.5 rounded-full cursor-pointer ${
-            strategy.active ? "bg-green-500" : "bg-slate-500"
-          }`}
-          title={strategy.active ? "Active (click to disable)" : "Inactive (click to enable)"}
-        />
-      </div>
-      <div className="space-y-1">
-        <p className="text-xs text-slate-400">
-          D: <span className="text-slate-200">{strategy.D?.toFixed(2) || "--"}</span>
-        </p>
-        {strategy.H1 != null && (
-          <p className="text-xs text-slate-400">
-            H1: <span className="text-slate-200">{strategy.H1.toFixed(2)}</span>
-            {strategy.L1 != null && (
-              <>
-                {" "}| L1: <span className="text-slate-200">{strategy.L1.toFixed(2)}</span>
-              </>
-            )}
-          </p>
-        )}
-        {strategy.A != null && (
-          <p className="text-xs text-slate-400">
-            A: <span className="text-slate-200">{strategy.A.toFixed(2)}</span>
-            {strategy.B != null && (
-              <>
-                {" "}| B: <span className="text-slate-200">{strategy.B.toFixed(2)}</span>
-              </>
-            )}
-            {strategy.C != null && (
-              <>
-                {" "}| C: <span className="text-slate-200">{strategy.C.toFixed(2)}</span>
-              </>
-            )}
-          </p>
-        )}
-        {strategy.pending_setup && (
-          <div className="mt-2 pt-2 border-t border-slate-700/50 text-xs text-slate-400">
-            <p>
-              Entry:{" "}
-              <span className="text-green-400">
-                {strategy.pending_setup.entry_price?.toFixed(2)}
-              </span>
-            </p>
-            <p>
-              SL:{" "}
-              <span className="text-red-400">
-                {strategy.pending_setup.stop_loss?.toFixed(2)}
-              </span>
-            </p>
-            <p>
-              Target:{" "}
-              <span className="text-blue-400">
-                {strategy.pending_setup.target?.toFixed(2)}
-              </span>
-            </p>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 function DivergenceCard({
   name,
   strategy,
@@ -292,18 +198,6 @@ export default function StrategyCards({ strategies }: StrategyCardsProps) {
 
   return (
     <div className="grid grid-cols-2 gap-2">
-      <SwingCard
-        name="Bull Swing"
-        strategy={strategies.bullish_swing}
-        strategyKey="bullish_swing"
-        accentColor="#22c55e"
-      />
-      <SwingCard
-        name="Bear Swing"
-        strategy={strategies.bearish_swing}
-        strategyKey="bearish_swing"
-        accentColor="#ef4444"
-      />
       <DivergenceCard
         name="Bull Divergence"
         strategy={strategies.bullish_divergence}

@@ -5,8 +5,6 @@ import { fetchAPI } from "@/lib/api";
 import type { TradeFiredBlock, TradeFiredResponse } from "@/lib/api";
 
 const STRATEGY_COLORS: Record<string, string> = {
-  bullish_swing: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-  bearish_swing: "bg-rose-500/15 text-rose-300 border-rose-500/30",
   bullish_divergence: "bg-sky-500/15 text-sky-300 border-sky-500/30",
   bearish_divergence: "bg-orange-500/15 text-orange-300 border-orange-500/30",
   bullish_divergence_futures: "bg-teal-500/15 text-teal-300 border-teal-500/30",

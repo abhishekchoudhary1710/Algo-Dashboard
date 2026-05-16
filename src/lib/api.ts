@@ -42,21 +42,6 @@ export interface Prices {
   last_tick_time: string | null;
 }
 
-export interface SwingStrategy {
-  active: boolean;
-  D: number | null;
-  H1?: number | null;
-  L1?: number | null;
-  A?: number | null;
-  B?: number | null;
-  C?: number | null;
-  pending_setup: {
-    entry_price: number | null;
-    stop_loss: number | null;
-    target: number | null;
-  } | null;
-}
-
 export interface PivotEntry {
   pivot_number: number;
   time: string;
@@ -97,8 +82,6 @@ export interface DivergenceStrategy {
 }
 
 export interface Strategies {
-  bullish_swing: SwingStrategy;
-  bearish_swing: SwingStrategy;
   bullish_divergence: DivergenceStrategy;
   bearish_divergence: DivergenceStrategy;
 }
@@ -360,8 +343,22 @@ export interface Trade {
   tracking_mode?: string;
   execution_status?: string;
   max_rr_achieved?: number | null;
+  initial_risk?: number | null;
   created_at?: string;
   updated_at?: string;
+  // Backtest simulator extras (present only on /api/backtest/simulate rows)
+  new_option_sl?: number | null;
+  new_option_target?: number | null;
+  sl_tick_time?: string | null;
+  skip_reason?: string | null;
+}
+
+export interface BacktestSimulationResponse {
+  trades: Trade[];
+  count: number;
+  date_from: string | null;
+  date_to: string | null;
+  error?: string;
 }
 
 export interface TradesResponse {

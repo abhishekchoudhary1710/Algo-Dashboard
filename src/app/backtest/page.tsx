@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useMemo, useCallback } from "react";
 import { fetchAPI } from "@/lib/api";
-import type { Trade, TradesHistoryResponse } from "@/lib/api";
+import type { Trade, BacktestSimulationResponse } from "@/lib/api";
 import Explainable from "@/components/Explainable";
 
 // ── Filter state ────────────────────────────────────────────────────────────
@@ -14,16 +14,12 @@ interface Filters {
   minRR: number;
 }
 
-const ALL_STRATEGIES = ["bullish_swing", "bearish_swing", "bullish_divergence", "bearish_divergence"];
+const ALL_STRATEGIES = ["bullish_divergence", "bearish_divergence"];
 const STRATEGY_LABELS: Record<string, string> = {
-  bullish_swing: "Bull Swing",
-  bearish_swing: "Bear Swing",
   bullish_divergence: "Bull Div",
   bearish_divergence: "Bear Div",
 };
 const STRATEGY_COLORS: Record<string, string> = {
-  bullish_swing: "#22c55e",
-  bearish_swing: "#ef4444",
   bullish_divergence: "#3b82f6",
   bearish_divergence: "#a855f7",
 };
@@ -60,6 +56,21 @@ function formatExitReason(reason: string | null): { label: string; cls: string }
   if (r.includes("SL")) return { label: "SL HIT", cls: "text-red-400 bg-red-500/10 px-1.5 py-0.5 rounded" };
   if (r.includes("TIME") || r.includes("CLOSE")) return { label: "TIMEOUT", cls: "text-yellow-400 bg-yellow-500/10 px-1.5 py-0.5 rounded" };
   return { label: reason, cls: "text-slate-500" };
+}
+
+function formatSkipReason(code: string | null | undefined): string {
+  if (!code) return "SKIPPED";
+  const map: Record<string, string> = {
+    no_matching_signal: "No matching signal",
+    sl_candle_not_found: "SL candle not found",
+    option_ticks_missing: "Option ticks missing",
+    no_option_ticks_at_sl_minute: "No ticks at SL minute",
+    no_option_tick_after_order: "No tick after order",
+    non_positive_risk: "Non-positive risk",
+    risk_below_min_floor: "Risk below 1.0 pt floor",
+    risk_too_wide_for_budget: "Risk too wide for budget",
+  };
+  return map[code] || code;
 }
 
 function formatTime(ts: string | null): string {
@@ -269,16 +280,23 @@ export default function BacktestPage() {
 
   const loadTrades = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
-      const data = await fetchAPI<TradesHistoryResponse>("/api/trades/history?days=90");
+      const params = new URLSearchParams({
+        date_from: filters.dateFrom,
+        date_to: filters.dateTo,
+      });
+      const data = await fetchAPI<BacktestSimulationResponse>(
+        `/api/backtest/simulate?${params.toString()}`
+      );
       if (data.error) setError(data.error);
       else setAllTrades(data.trades);
     } catch {
-      setError("Failed to fetch trade history");
+      setError("Failed to fetch backtest simulation");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [filters.dateFrom, filters.dateTo]);
 
   useEffect(() => { loadTrades(); }, [loadTrades]);
 
@@ -315,12 +333,21 @@ export default function BacktestPage() {
   const wins = filtered.filter((t) => computeSimPnl(t, filters.minRR) > 0).length;
   const losses = filtered.filter((t) => computeSimPnl(t, filters.minRR) <= 0 && t.status === "CLOSED").length;
 
+  const slPnls = filtered
+    .filter((t) => (t.exit_reason || "").toUpperCase().includes("SL"))
+    .map((t) => computeSimPnl(t, filters.minRR));
+  const tgtPnls = filtered
+    .filter((t) => (t.exit_reason || "").toUpperCase().includes("TARGET"))
+    .map((t) => computeSimPnl(t, filters.minRR));
+  const avgLoss = slPnls.length > 0 ? slPnls.reduce((a, b) => a + b, 0) / slPnls.length : null;
+  const avgTarget = tgtPnls.length > 0 ? tgtPnls.reduce((a, b) => a + b, 0) / tgtPnls.length : null;
+
   return (
     <div className="min-h-screen bg-[#0a0a0f] text-slate-200 p-3 md:p-4 space-y-3 md:space-y-4">
       {/* Header */}
       <div>
-        <h1 className="text-lg font-mono font-bold tracking-widest uppercase text-slate-200">Backtest & Analysis</h1>
-        <p className="text-xs text-slate-600 font-mono">Historical trade analysis · Filter · Visualize</p>
+        <h1 className="text-lg font-mono font-bold tracking-widest uppercase text-slate-200">Backtest Simulation</h1>
+        <p className="text-xs text-slate-600 font-mono">Tick-replay PnL · New SL from option 1m low · Qty sized to ₹5250 risk · Lot=65</p>
       </div>
 
       {/* Filter bar */}
@@ -418,6 +445,22 @@ export default function BacktestPage() {
               </div>
             </div>
           </Explainable>
+          <Explainable title="Average Loss" explanation="Average P&L across trades that exited via stop-loss (SL HIT, OPT SL, SPOT SL). This is your typical losing trade size.">
+            <div className="text-center">
+              <div className="text-slate-600 text-[10px] uppercase">Avg Loss</div>
+              <div className="font-mono font-bold text-red-400">
+                {avgLoss != null ? avgLoss.toLocaleString("en-IN", { maximumFractionDigits: 0 }) : "—"}
+              </div>
+            </div>
+          </Explainable>
+          <Explainable title="Average Target" explanation="Average P&L across trades that exited at target. This is your typical winning trade size.">
+            <div className="text-center">
+              <div className="text-slate-600 text-[10px] uppercase">Avg Target</div>
+              <div className="font-mono font-bold text-emerald-400">
+                {avgTarget != null ? `+${avgTarget.toLocaleString("en-IN", { maximumFractionDigits: 0 })}` : "—"}
+              </div>
+            </div>
+          </Explainable>
           <Explainable title="Net P&L" explanation="Total realized profit/loss across all filtered trades.\n\nCalculated as: Sum of (Exit Price − Entry Price) × Quantity for each closed trade.\n\nGreen = net profit, Red = net loss.">
             <div className="text-center">
               <div className="text-slate-600 text-[10px] uppercase">Net PnL</div>
@@ -471,6 +514,7 @@ export default function BacktestPage() {
                     <th className="text-right px-3 py-2 font-medium">Strike</th>
                     <th className="text-right px-3 py-2 font-medium">Qty</th>
                     <th className="text-right px-3 py-2 font-medium">Entry ₹</th>
+                    <th className="text-right px-3 py-2 font-medium">SL ₹</th>
                     <th className="text-right px-3 py-2 font-medium">Exit ₹</th>
                     <th className="text-left px-3 py-2 font-medium">Exit Time</th>
                     <th className="text-center px-3 py-2 font-medium">Reason</th>
@@ -483,6 +527,7 @@ export default function BacktestPage() {
                   {filtered.slice(0, 200).map((t, i) => {
                     const color = STRATEGY_COLORS[t.strategy] || "#64748b";
                     const dir = deriveDirection(t);
+                    const isSkipped = t.status === "SKIPPED";
                     const reason = formatExitReason(t.exit_reason);
                     return (
                       <tr key={`${t.trade_id}-${i}`} className="border-b border-[#1e1e2e]/50 hover:bg-[#1a1a24]">
@@ -512,10 +557,13 @@ export default function BacktestPage() {
                           {t.strike ?? "\u2014"}
                         </td>
                         <td className="px-3 py-1.5 text-right font-mono text-slate-400">
-                          {t.quantity ?? "\u2014"}
+                          {t.quantity != null ? t.quantity.toLocaleString("en-IN") : "\u2014"}
                         </td>
                         <td className="px-3 py-1.5 text-right font-mono text-slate-300">
                           {t.entry_price?.toFixed(2) ?? "\u2014"}
+                        </td>
+                        <td className="px-3 py-1.5 text-right font-mono text-red-400">
+                          {t.new_option_sl != null ? t.new_option_sl.toFixed(2) : "\u2014"}
                         </td>
                         <td className="px-3 py-1.5 text-right font-mono text-slate-300">
                           {t.exit_price?.toFixed(2) ?? "\u2014"}
@@ -524,7 +572,13 @@ export default function BacktestPage() {
                           {formatTime(t.exit_time)}
                         </td>
                         <td className="px-3 py-1.5 text-center">
-                          <span className={`text-[10px] font-bold tracking-wider ${reason.cls}`}>{reason.label}</span>
+                          {isSkipped ? (
+                            <span className="text-[10px] font-bold tracking-wider text-slate-400 bg-slate-800 px-1.5 py-0.5 rounded">
+                              {formatSkipReason(t.skip_reason)}
+                            </span>
+                          ) : (
+                            <span className={`text-[10px] font-bold tracking-wider ${reason.cls}`}>{reason.label}</span>
+                          )}
                         </td>
                         <td className={`px-3 py-1.5 text-right font-mono ${
                           (t.max_rr_achieved ?? 0) >= 1.5 ? "text-emerald-400" : (t.max_rr_achieved ?? 0) >= 1 ? "text-yellow-400" : "text-slate-300"
@@ -542,6 +596,7 @@ export default function BacktestPage() {
                           <span className={`text-[10px] font-bold tracking-wider px-1.5 py-0.5 rounded ${
                             t.status === "CLOSED" ? "text-slate-400 bg-slate-800" :
                             t.status === "OPEN" ? "text-blue-400 bg-blue-500/10" :
+                            t.status === "SKIPPED" ? "text-yellow-500/80 bg-yellow-500/10" :
                             "text-slate-600"
                           }`}>
                             {t.status || "\u2014"}
