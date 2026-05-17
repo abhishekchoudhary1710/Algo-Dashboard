@@ -29,7 +29,7 @@ export default function OrdersPage() {
                 : "text-slate-500 hover:text-slate-300"
             }`}
           >
-            History (30d)
+            History (All)
           </button>
         </div>
       </div>

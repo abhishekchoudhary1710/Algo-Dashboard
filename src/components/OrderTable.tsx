@@ -108,7 +108,7 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
   if (trades.length === 0) {
     return (
       <div className="bg-[#12121a] rounded-xl p-8 border border-[#1e1e2e] text-center">
-        <p className="text-slate-500 font-mono text-sm">No trades in the last 30 days</p>
+        <p className="text-slate-500 font-mono text-sm">No trades found</p>
       </div>
     );
   }
@@ -267,7 +267,7 @@ export default function OrderTable({ mode }: { mode: "today" | "history" }) {
           setOrders(data.orders);
         } else {
           // Use trades endpoint for richer data
-          const data = await fetchAPI<TradesHistoryResponse>("/api/trades/history?days=30");
+          const data = await fetchAPI<TradesHistoryResponse>("/api/trades/history");
           if (data.error) setError(data.error);
           else setTrades(data.trades);
         }

@@ -13,6 +13,7 @@ const navItems = [
   { href: "/trade-fired", label: "Trade Debug", icon: "🔥" },
   { href: "/pnl", label: "P&L", icon: "₹" },
   { href: "/backtest", label: "Backtest", icon: "↺" },
+  { href: "/replay", label: "Replay", icon: "⟳" },
 ];
 
 export default function Sidebar() {
