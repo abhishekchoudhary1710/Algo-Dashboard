@@ -25,6 +25,18 @@ export async function postAPI<T>(endpoint: string, body?: unknown): Promise<T> {
   return res.json();
 }
 
+export async function patchAPI<T>(endpoint: string, body?: unknown): Promise<T> {
+  const res = await fetch(`${API_URL}${endpoint}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  if (!res.ok) {
+    throw new Error(`API error: ${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
 // Types
 export interface BotStatus {
   bot_running: boolean;
@@ -346,11 +358,28 @@ export interface Trade {
   initial_risk?: number | null;
   created_at?: string;
   updated_at?: string;
+  // EOD review (user-supplied)
+  plan_aligned?: boolean | null;
+  plan_note?: string | null;
+  eod_note?: string | null;
+  eod_reviewed_at?: string | null;
   // Backtest simulator extras (present only on /api/backtest/simulate rows)
   new_option_sl?: number | null;
   new_option_target?: number | null;
   sl_tick_time?: string | null;
   skip_reason?: string | null;
+}
+
+export interface TradeReviewPatch {
+  plan_aligned?: boolean | null;
+  plan_note?: string | null;
+  eod_note?: string | null;
+}
+
+export interface TradeReviewResponse {
+  trade?: Trade;
+  status: "ok" | "error";
+  error?: string;
 }
 
 export interface BacktestSimulationResponse {
