@@ -32,6 +32,8 @@ interface OHLCReadout {
   changePct: number;
 }
 
+const PAGE_SIZE = 500;
+
 export default function CandlestickChart({
   currentCandle,
   signals,
@@ -41,8 +43,16 @@ export default function CandlestickChart({
   const seriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const optionPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const spotFutPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const initialLoadDoneRef = useRef(false);
 
+  // Dynamic history state
+  const allCandlesRef = useRef<CandlestickData[]>([]);
+  const earliestTimeRef = useRef<number | null>(null);
+  const loadingMoreRef = useRef(false);
+  const hasMoreRef = useRef(true);
+  // Ref so the chart scroll subscription can always call the latest version
+  const loadMoreFnRef = useRef<(() => Promise<void>) | null>(null);
+
+  const [chartReady, setChartReady] = useState(false);
   const [timeframe, setTimeframe] = useState<Timeframe>("1m");
   const [instrument, setInstrument] = useState<Instrument>("spot");
   const [loading, setLoading] = useState(false);
@@ -88,6 +98,7 @@ export default function CandlestickChart({
 
       chartRef.current = chart;
       seriesRef.current = series;
+      setChartReady(true);
 
       // OHLC crosshair readout
       chart.subscribeCrosshairMove((param) => {
@@ -112,6 +123,13 @@ export default function CandlestickChart({
         setOhlc({ time: timeStr, open: bar.open, high: bar.high, low: bar.low, close: bar.close, change: chg, changePct: pct });
       });
 
+      // Load more history when user scrolls to the left edge
+      chart.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+        if (range !== null && range.from < 10) {
+          loadMoreFnRef.current?.();
+        }
+      });
+
       // Resize observer
       observer = new ResizeObserver(() => {
         if (containerRef.current) {
@@ -133,61 +151,143 @@ export default function CandlestickChart({
     };
   }, []);
 
-  // ── Load spot/fut candles ────────────────────────────────────────────
-  const loadSpotFutCandles = useCallback(async () => {
-    if (!seriesRef.current || instrument === "option") return;
+  // ── Helpers ──────────────────────────────────────────────────────────
+  function toCandlestickData(c: OHLCCandle): CandlestickData {
+    return { time: c.time as Time, open: c.open, high: c.high, low: c.low, close: c.close };
+  }
+
+  function applyMarkers(inst: Instrument) {
+    if (!seriesRef.current || signals.length === 0) return;
+    const markers: SeriesMarker<Time>[] = signals
+      .filter((s) => s.instrument === inst)
+      .map((s) => {
+        const bull = s.strategy.includes("bullish");
+        return {
+          time: Math.floor(new Date(s.timestamp).getTime() / 1000) as Time,
+          position: bull ? ("belowBar" as const) : ("aboveBar" as const),
+          color: bull ? "#22c55e" : "#ef4444",
+          shape: bull ? ("arrowUp" as const) : ("arrowDown" as const),
+          text: s.strategy.replace(/_/g, " ").toUpperCase(),
+        };
+      })
+      .sort((a, b) => (a.time as number) - (b.time as number));
+    seriesRef.current.setMarkers(markers);
+  }
+
+  // ── Initial load for spot/fut ─────────────────────────────────────────
+  const doInitialLoad = useCallback(async () => {
+    if (!chartReady || !seriesRef.current || instrument === "option") return;
     setLoading(true);
+    allCandlesRef.current = [];
+    earliestTimeRef.current = null;
+    hasMoreRef.current = true;
     try {
       const data = await fetchAPI<OHLCResponse>(
-        `/api/candles/ohlc?instrument=${instrument}&timeframe=${timeframe}&count=500`
+        `/api/candles/ohlc?instrument=${instrument}&timeframe=${timeframe}&count=${PAGE_SIZE}`
       );
-      const all: OHLCCandle[] = [...data.candles];
+      const raw: OHLCCandle[] = [...data.candles];
       if (data.current_candle) {
-        const last = all[all.length - 1];
-        if (last && last.time === data.current_candle.time) all[all.length - 1] = data.current_candle;
-        else all.push(data.current_candle);
+        const last = raw[raw.length - 1];
+        if (last && last.time === data.current_candle.time) raw[raw.length - 1] = data.current_candle;
+        else raw.push(data.current_candle);
       }
-      const formatted: CandlestickData[] = all.map((c) => ({
-        time: c.time as Time, open: c.open, high: c.high, low: c.low, close: c.close,
-      }));
+      const formatted = raw.map(toCandlestickData);
+      allCandlesRef.current = formatted;
+      if (formatted[0]) earliestTimeRef.current = formatted[0].time as number;
+      hasMoreRef.current = data.candles.length > 0;
       seriesRef.current?.setData(formatted);
-
-      if (signals.length > 0) {
-        const markers: SeriesMarker<Time>[] = signals
-          .filter((s) => s.instrument === instrument)
-          .map((s) => {
-            const bull = s.strategy.includes("bullish");
-            return {
-              time: Math.floor(new Date(s.timestamp).getTime() / 1000) as Time,
-              position: bull ? ("belowBar" as const) : ("aboveBar" as const),
-              color: bull ? "#22c55e" : "#ef4444",
-              shape: bull ? ("arrowUp" as const) : ("arrowDown" as const),
-              text: s.strategy.replace(/_/g, " ").toUpperCase(),
-            };
-          })
-          .sort((a, b) => (a.time as number) - (b.time as number));
-        seriesRef.current?.setMarkers(markers);
-      }
-      if (!initialLoadDoneRef.current) {
-        chartRef.current?.timeScale().fitContent();
-        initialLoadDoneRef.current = true;
-      }
+      applyMarkers(instrument);
+      chartRef.current?.timeScale().fitContent();
     } catch { /* silently fail */ }
     setLoading(false);
-  }, [instrument, timeframe, signals]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chartReady, instrument, timeframe, signals]);
 
-  // Poll spot/fut candles every 2s (REST-based, no WS needed)
+  // ── Poll only the latest candles (keeps live bar ticking) ─────────────
+  const pollLatestCandle = useCallback(async () => {
+    if (!seriesRef.current || instrument === "option" || allCandlesRef.current.length === 0) return;
+    try {
+      const data = await fetchAPI<OHLCResponse>(
+        `/api/candles/ohlc?instrument=${instrument}&timeframe=${timeframe}&count=3`
+      );
+      const updates: OHLCCandle[] = [...data.candles];
+      if (data.current_candle) {
+        const last = updates[updates.length - 1];
+        if (last && last.time === data.current_candle.time) updates[updates.length - 1] = data.current_candle;
+        else updates.push(data.current_candle);
+      }
+      const lastLoadedTime = allCandlesRef.current[allCandlesRef.current.length - 1]?.time as number;
+      for (const c of updates) {
+        if ((c.time as number) >= lastLoadedTime) {
+          seriesRef.current?.update(toCandlestickData(c));
+          const idx = allCandlesRef.current.findIndex((x) => (x.time as number) === c.time);
+          const entry = toCandlestickData(c);
+          if (idx >= 0) allCandlesRef.current[idx] = entry;
+          else allCandlesRef.current.push(entry);
+        }
+      }
+    } catch { /* silently fail */ }
+  }, [instrument, timeframe]);
+
+  // ── Load older candles when user scrolls to left edge ─────────────────
+  const loadMore = useCallback(async () => {
+    if (
+      !seriesRef.current ||
+      !chartRef.current ||
+      loadingMoreRef.current ||
+      !hasMoreRef.current ||
+      !earliestTimeRef.current ||
+      instrument === "option"
+    ) return;
+
+    loadingMoreRef.current = true;
+    setLoading(true);
+    try {
+      const visibleRange = chartRef.current.timeScale().getVisibleRange();
+      const data = await fetchAPI<OHLCResponse>(
+        `/api/candles/ohlc?instrument=${instrument}&timeframe=${timeframe}&count=${PAGE_SIZE}&before=${earliestTimeRef.current}`
+      );
+      if (data.candles.length === 0) {
+        hasMoreRef.current = false;
+      } else {
+        const older = data.candles.map(toCandlestickData);
+        const combined = [...older, ...allCandlesRef.current];
+        allCandlesRef.current = combined;
+        earliestTimeRef.current = older[0].time as number;
+        hasMoreRef.current = true; // only stop when backend returns 0
+        seriesRef.current?.setData(combined);
+        // Restore the user's scroll position after prepending data
+        if (visibleRange) {
+          chartRef.current?.timeScale().setVisibleRange(visibleRange);
+        }
+      }
+    } catch { /* silently fail */ }
+    loadingMoreRef.current = false;
+    setLoading(false);
+  }, [instrument, timeframe]);
+
+  // Keep the scroll subscription's ref in sync with the latest loadMore
+  useEffect(() => {
+    loadMoreFnRef.current = loadMore;
+  }, [loadMore]);
+
+  // ── Initial load on instrument/timeframe change ───────────────────────
+  useEffect(() => {
+    if (instrument !== "option") {
+      doInitialLoad();
+    }
+  }, [doInitialLoad, instrument]);
+
+  // ── Poll for live bar updates every 2s ───────────────────────────────
   useEffect(() => {
     if (spotFutPollRef.current) clearInterval(spotFutPollRef.current);
     if (instrument !== "option") {
-      initialLoadDoneRef.current = false;
-      loadSpotFutCandles();
-      spotFutPollRef.current = setInterval(loadSpotFutCandles, 2000);
+      spotFutPollRef.current = setInterval(pollLatestCandle, 2000);
     }
     return () => { if (spotFutPollRef.current) clearInterval(spotFutPollRef.current); };
-  }, [instrument, timeframe, loadSpotFutCandles]);
+  }, [instrument, timeframe, pollLatestCandle]);
 
-  // Real-time spot/fut candle via WS
+  // ── Real-time spot/fut candle via WS ──────────────────────────────────
   useEffect(() => {
     if (
       currentCandle &&
@@ -196,13 +296,11 @@ export default function CandlestickChart({
       currentCandle.instrument === instrument &&
       currentCandle.timeframe === timeframe
     ) {
-      seriesRef.current.update({
-        time: currentCandle.candle.time as Time,
-        open: currentCandle.candle.open,
-        high: currentCandle.candle.high,
-        low: currentCandle.candle.low,
-        close: currentCandle.candle.close,
-      });
+      const entry = toCandlestickData(currentCandle.candle);
+      seriesRef.current.update(entry);
+      const idx = allCandlesRef.current.findIndex((x) => (x.time as number) === currentCandle.candle.time);
+      if (idx >= 0) allCandlesRef.current[idx] = entry;
+      else allCandlesRef.current.push(entry);
     }
   }, [currentCandle, instrument, timeframe]);
 
@@ -211,23 +309,17 @@ export default function CandlestickChart({
     if (!seriesRef.current) return;
     try {
       const data = await fetchAPI<OptionCandlesResponse>(
-        `/api/options/candles?token=${encodeURIComponent(token)}&timeframe=${timeframe}&count=500`
+        `/api/options/candles?token=${encodeURIComponent(token)}&timeframe=${timeframe}&count=${PAGE_SIZE}`
       );
-      const all: OHLCCandle[] = [...data.candles];
+      const raw: OHLCCandle[] = [...data.candles];
       if (data.current_candle) {
-        const last = all[all.length - 1];
-        if (last && last.time === data.current_candle.time) all[all.length - 1] = data.current_candle;
-        else all.push(data.current_candle);
+        const last = raw[raw.length - 1];
+        if (last && last.time === data.current_candle.time) raw[raw.length - 1] = data.current_candle;
+        else raw.push(data.current_candle);
       }
-      if (all.length === 0) return;
-      const formatted: CandlestickData[] = all.map((c) => ({
-        time: c.time as Time, open: c.open, high: c.high, low: c.low, close: c.close,
-      }));
-      seriesRef.current?.setData(formatted);
-      if (!initialLoadDoneRef.current) {
-        chartRef.current?.timeScale().fitContent();
-        initialLoadDoneRef.current = true;
-      }
+      if (raw.length === 0) return;
+      seriesRef.current?.setData(raw.map(toCandlestickData));
+      chartRef.current?.timeScale().fitContent();
     } catch { /* silently fail */ }
   }, [timeframe]);
 
@@ -235,7 +327,6 @@ export default function CandlestickChart({
   useEffect(() => {
     if (optionPollRef.current) clearInterval(optionPollRef.current);
     if (instrument === "option" && selectedToken) {
-      initialLoadDoneRef.current = false;
       loadOptionCandles(selectedToken);
       optionPollRef.current = setInterval(() => loadOptionCandles(selectedToken), 2000);
     }
@@ -274,7 +365,6 @@ export default function CandlestickChart({
   useEffect(() => {
     if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
     const q = strikeFilter.trim();
-    // Only search when it looks like a full/partial symbol (not just a strike number)
     if (q.length >= 8 && /[A-Za-z]/.test(q)) {
       searchTimerRef.current = setTimeout(async () => {
         try {
