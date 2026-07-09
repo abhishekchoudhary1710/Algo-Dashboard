@@ -21,6 +21,29 @@ function PnlBadge({ value }: { value: number | null }) {
   return <span className={`font-mono font-medium ${color}`}>{prefix}{value.toFixed(2)}</span>;
 }
 
+// Humanize the raw entry_method token saved by the strategy engine
+// (e.g. "three_top" -> "3 Top", "mother_child" -> "Mother-Child").
+const ENTRY_METHOD_LABELS: Record<string, string> = {
+  pullback: "Pullback",
+  three_top: "3 Top",
+  three_bottom: "3 Bottom",
+  mother_child: "Mother-Child",
+  red_candle: "Red Candle",
+  green_candle: "Green Candle",
+};
+
+function EntryMethodBadge({ method }: { method: string | null | undefined }) {
+  if (!method) return <span className="text-slate-600">--</span>;
+  const label =
+    ENTRY_METHOD_LABELS[method] ??
+    method.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
+  return (
+    <span className="text-[10px] px-1.5 py-0.5 rounded bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 whitespace-nowrap">
+      {label}
+    </span>
+  );
+}
+
 function StatusBadge({ status }: { status: string }) {
   const colors: Record<string, string> = {
     OPEN: "bg-blue-500/20 text-blue-400 border-blue-500/30",
@@ -223,7 +246,11 @@ export default function TradesPage() {
   const editingRef = useRef<string | null>(null);
 
   const recomputeSummary = useCallback((trades: Trade[]) => {
-    const realTrades = trades.filter((t) => t.execution_status !== "REJECTED");
+    // Count every tracked trade — including broker-rejected ones, which are
+    // tracked as virtual/paper trades and carry real entry/exit/P&L. When all
+    // trades are paper (broker rejecting orders), excluding them left the whole
+    // summary bar empty.
+    const realTrades = trades;
     const closed = realTrades.filter((t) => t.status === "CLOSED");
     const winners = closed.filter((t) => (t.realized_pnl ?? 0) > 0);
     const losers = closed.filter((t) => (t.realized_pnl ?? 0) <= 0);
@@ -562,6 +589,7 @@ function TradeTable({
             <th className="px-3 py-2 text-slate-400 font-medium">Date</th>
             <th className="px-3 py-2 text-slate-400 font-medium">Time</th>
             <th className="px-3 py-2 text-slate-400 font-medium">Strategy</th>
+            <th className="px-3 py-2 text-slate-400 font-medium" title="Entry trigger that fired this trade">Entry Method</th>
             <th className="px-3 py-2 text-slate-400 font-medium">Direction</th>
             <th className="px-3 py-2 text-slate-400 font-medium">Type</th>
             <th className="px-3 py-2 text-slate-400 font-medium">Strike</th>
@@ -609,6 +637,9 @@ function TradeTable({
                   }`}>
                     {trade.strategy}
                   </span>
+                </td>
+                <td className="px-3 py-2">
+                  <EntryMethodBadge method={trade.entry_method} />
                 </td>
                 <td className="px-3 py-2 text-slate-300">{trade.direction}</td>
                 <td className="px-3 py-2">
