@@ -375,6 +375,13 @@ export default function TradesPage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Link
+            href="/trades/restated"
+            className="px-3 py-1.5 text-xs font-medium rounded border border-indigo-500/40 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-500/20"
+            title="Every historical trade re-run under the new rules (chart exits + delta sizing)"
+          >
+            ⚖️ Restated (New Rules)
+          </Link>
+          <Link
             href="/trades/review"
             className="px-3 py-1.5 text-xs font-medium rounded border border-amber-500/40 bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
             title="Walk through trades that still need an EOD note"
