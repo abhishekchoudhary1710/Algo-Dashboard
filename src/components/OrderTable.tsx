@@ -104,7 +104,37 @@ function TodayOrdersTable({ orders }: { orders: Order[] }) {
 
 // ── History: trade-level view with full details ─────────────────────────────
 
+// ₹2k-risk normalization: every trade re-sized to a fixed ₹2,000 SL budget
+// (lots = budget / per-unit premium risk, nearest lot, min 1) so different
+// quantities/risk-per-trade stop distorting comparisons across eras. Losses
+// are capped at 1.1x the budget — the settled plan's disaster cap.
+const LOT_SIZE = 65;
+const NORM_RISK = 2000;
+const MAX_LOSS = -1.1 * NORM_RISK;
+
+function normQuantity(initialRisk: number | null | undefined): number | null {
+  if (initialRisk == null || initialRisk <= 0) return null;
+  const lots = Math.max(1, Math.round(NORM_RISK / (initialRisk * LOT_SIZE)));
+  return lots * LOT_SIZE;
+}
+
+// Realized R-multiple at exit: premium move over per-unit risk. Quantity
+// cancels out, so this is identical in the ₹2K and actual views.
+function exitRR(t: Trade): number | null {
+  if (t.initial_risk == null || t.initial_risk <= 0) return null;
+  if (t.exit_price == null || t.entry_price == null) return null;
+  return (t.exit_price - t.entry_price) / t.initial_risk;
+}
+
+function tradePnl(t: Trade, norm: boolean): number | null {
+  if (!norm) return t.realized_pnl ?? null;
+  const q = normQuantity(t.initial_risk ?? null);
+  if (q == null || t.exit_price == null || t.entry_price == null) return null;
+  return Math.max((t.exit_price - t.entry_price) * q, MAX_LOSS);
+}
+
 function TradeHistoryTable({ trades }: { trades: Trade[] }) {
+  const [norm, setNorm] = useState(true);
   if (trades.length === 0) {
     return (
       <div className="bg-[#12121a] rounded-xl p-8 border border-[#1e1e2e] text-center">
@@ -131,6 +161,17 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
       {/* Summary bar */}
       <div className="px-4 py-3 border-b border-[#1e1e2e] flex items-center gap-6">
         <span className="text-[10px] text-slate-600 uppercase tracking-wider font-semibold">Trade History</span>
+        <button
+          onClick={() => setNorm(!norm)}
+          className={`px-2 py-0.5 rounded text-[10px] font-mono font-bold tracking-wider border transition-colors ${
+            norm
+              ? "text-amber-400 bg-amber-500/10 border-amber-500/30"
+              : "text-slate-500 bg-transparent border-[#1e1e2e] hover:text-slate-300"
+          }`}
+          title="Re-size every trade to a fixed ₹2,000 SL budget (lots from per-unit risk); losses capped at 2x budget = disaster stop"
+        >
+          {norm ? "₹2K RISK" : "ACTUAL ₹"}
+        </button>
         <div className="flex gap-4 ml-auto text-xs">
           <div className="text-center">
             <span className="text-slate-600 text-[10px]">Trades</span>
@@ -179,6 +220,7 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
               <th className="text-left px-3 py-2 font-medium">Exit Time</th>
               <th className="text-center px-3 py-2 font-medium">Reason</th>
               <th className="text-right px-3 py-2 font-medium">Max RR</th>
+              <th className="text-right px-3 py-2 font-medium">R:R</th>
               <th className="text-right px-3 py-2 font-medium">PnL</th>
               <th className="text-left px-3 py-2 font-medium">Status</th>
             </tr>
@@ -188,6 +230,9 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
               const color = STRATEGY_COLORS[t.strategy] || "#64748b";
               const dir = deriveDirection(t.strategy);
               const reason = formatExitReason(t.exit_reason);
+              const pnlVal = tradePnl(t, norm);
+              const qNorm = normQuantity(t.initial_risk ?? null);
+              const rr = exitRR(t);
               return (
                 <tr key={`${t.trade_id}-${i}`} className="border-b border-[#1e1e2e]/50 hover:bg-[#1a1a24]">
                   <td className="px-3 py-1.5 font-mono text-slate-400 whitespace-nowrap">
@@ -207,7 +252,10 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
                   </td>
                   <td className="px-3 py-1.5 font-mono text-slate-400">{t.option_type || "\u2014"}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-slate-400">{t.strike ?? "\u2014"}</td>
-                  <td className="px-3 py-1.5 text-right font-mono text-slate-400">{t.quantity ?? "\u2014"}</td>
+                  <td className="px-3 py-1.5 text-right font-mono text-slate-400"
+                      title={norm ? `actual qty ${t.quantity ?? "\u2014"}` : undefined}>
+                    {norm ? (qNorm ?? "\u2014") : (t.quantity ?? "\u2014")}
+                  </td>
                   <td className="px-3 py-1.5 text-right font-mono text-slate-300">{t.entry_price?.toFixed(2) ?? "\u2014"}</td>
                   <td className="px-3 py-1.5 text-right font-mono text-red-400">
                     {t.initial_risk != null && t.initial_risk > 0 ? t.initial_risk.toFixed(2) : "\u2014"}
@@ -222,11 +270,16 @@ function TradeHistoryTable({ trades }: { trades: Trade[] }) {
                   }`}>
                     {t.max_rr_achieved != null ? t.max_rr_achieved.toFixed(2) : "\u2014"}
                   </td>
-                  <td className={`px-3 py-1.5 text-right font-mono font-bold ${
-                    (t.realized_pnl ?? 0) > 0 ? "text-emerald-400" : (t.realized_pnl ?? 0) < 0 ? "text-red-400" : "text-slate-500"
+                  <td className={`px-3 py-1.5 text-right font-mono ${
+                    rr == null ? "text-slate-600" : rr > 0 ? "text-emerald-400" : rr < 0 ? "text-red-400" : "text-slate-300"
                   }`}>
-                    {t.realized_pnl != null
-                      ? `${t.realized_pnl > 0 ? "+" : ""}${t.realized_pnl.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
+                    {rr != null ? `${rr > 0 ? "+" : ""}${rr.toFixed(2)}` : "\u2014"}
+                  </td>
+                  <td className={`px-3 py-1.5 text-right font-mono font-bold ${
+                    (pnlVal ?? 0) > 0 ? "text-emerald-400" : (pnlVal ?? 0) < 0 ? "text-red-400" : "text-slate-500"
+                  }`}>
+                    {pnlVal != null
+                      ? `${pnlVal > 0 ? "+" : ""}${pnlVal.toLocaleString("en-IN", { maximumFractionDigits: 0 })}`
                       : "\u2014"}
                   </td>
                   <td className="px-3 py-1.5">

@@ -359,6 +359,20 @@ export interface Trade {
   initial_risk?: number | null;
   created_at?: string;
   updated_at?: string;
+  // Alternate exit strategy (simulated in parallel with the real exit):
+  // exit_mode is what actually closed the trade ('chart' = spot/fut levels),
+  // alt_* is what the OTHER strategy (strike-premium SL/target) would have done.
+  exit_mode?: string | null;
+  alt_exit_mode?: string | null;
+  alt_exit_price?: number | null;
+  alt_exit_reason?: string | null;
+  alt_exit_time?: string | null;
+  alt_rr_at_exit?: number | null;
+  alt_pnl?: number | null;
+  // Strike-exit system (its own premium SL/target and its own quantity)
+  strike_sl?: number | null;
+  strike_target?: number | null;
+  strike_quantity?: number | null;
   // EOD review (user-supplied)
   plan_aligned?: boolean | null;
   plan_note?: string | null;

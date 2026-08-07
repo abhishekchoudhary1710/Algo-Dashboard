@@ -7,6 +7,7 @@ import { useExplainMode } from "@/contexts/ExplainModeContext";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: "▣" },
+  { href: "/plan", label: "The Plan", icon: "◎" },
   { href: "/chart", label: "Chart", icon: "▲" },
   { href: "/trades", label: "Trades", icon: "≡" },
   { href: "/orders", label: "Orders", icon: "◈" },
