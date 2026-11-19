@@ -2,14 +2,12 @@
 
 import { signIn } from "next-auth/react";
 import { useState, FormEvent } from "react";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const router = useRouter();
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
@@ -27,8 +25,8 @@ export default function LoginPage() {
     if (result?.error) {
       setError("Invalid username or password");
     } else {
-      router.push("/");
-      router.refresh();
+      // Fetch a fresh authenticated page instead of reusing a cached login redirect.
+      window.location.assign("/");
     }
   };
 

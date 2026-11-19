@@ -24,6 +24,7 @@ import PotentialTradesMonitor from "./PotentialTradesMonitor";
 import SignalFeed from "./SignalFeed";
 import TradeExcursionPanel from "./TradeExcursionPanel";
 import StrategyPerformance from "./StrategyPerformance";
+import BiasResults from "./BiasResults";
 
 // ── Main component ──────────────────────────────────────────────────────────
 export default function DashboardGrid() {
@@ -125,12 +126,13 @@ export default function DashboardGrid() {
   // Loading state
   if (!tickData && !connected) {
     return (
-      <div className="flex items-center justify-center h-screen bg-[#0a0a0f]">
+      <div className="min-h-screen bg-[#0a0a0f] p-4 space-y-6">
         <div className="text-center space-y-3">
           <div className="w-8 h-8 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
           <div className="text-slate-400 text-sm font-mono">Connecting to trading engine...</div>
           <p className="text-xs text-slate-600">Make sure the backend is running on port 8000</p>
         </div>
+        <BiasResults compact />
       </div>
     );
   }
@@ -158,6 +160,7 @@ export default function DashboardGrid() {
       </div>
 
       {/* ── Zone 2: Potential Trades Monitor (full width) ── */}
+      <div className="px-3 md:px-4 pt-3"><BiasResults compact /></div>
       <div className="px-3 md:px-4 pt-3">
         <PotentialTradesMonitor strategies={strategies} />
       </div>
